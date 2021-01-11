@@ -73,8 +73,6 @@ def string_normalizer(phrase: str) -> str:
     # -> NFC
     phrase = normalize("NFC", phrase)
     phrase = phrase.replace(",", "")
-    phrase = phrase.replace("?", "")
-    phrase = phrase.replace("¿", "")
     phrase = phrase.lower()
     return phrase
 
