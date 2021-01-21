@@ -57,11 +57,21 @@ def help_command(update: Update, context: CallbackContext) -> None:
 
 def echo(update: Update, context: CallbackContext) -> None:
     """Echo the user message."""
-    if update.message.date > START_BOT_DATETIME:
-        meme_url = get_meme_url(string_normalizer(update.message.text))
-        # update.message.reply_text(update.message.text)
-        if meme_url:
-            update.message.reply_photo(meme_url)
+    if hasattr(update.message, "date"):
+        if update.message.date > START_BOT_DATETIME:
+            meme = get_meme_sticker(string_normalizer(update.message.text))
+            if meme:
+                update.message.reply_sticker(meme)
+            else:
+                meme = get_meme_url(string_normalizer(update.message.text))
+                if meme:
+                    update.message.reply_photo(meme)
+
+
+def get_sticker_id(update: Update, context: CallbackContext) -> None:
+    sticker_id = update.message.sticker.file_id
+    if sticker_id:
+        context.bot.send_message(chat_id=232424901, text=str(sticker_id))
 
 
 def id(update: Update, context: CallbackContext) -> None:
@@ -101,16 +111,25 @@ def string_normalizer(phrase: str) -> str:
 
 def get_meme_url(meme: str) -> str:
     try:
-        df = pd.read_excel("data/meme_bot_db.xlsx")
+        df = pd.read_excel("/home/pi/Projects/memeBot/data/meme_bot_db.xlsx")
         meme_df = df.loc[df["Meme"] == meme]
         return meme_df.iloc[0, 1]
     except:
         return False
 
 
+def get_meme_sticker(meme: str) -> str:
+    try:
+        df = pd.read_excel("/home/pi/Projects/memeBot/data/meme_bot_db.xlsx")
+        meme_df = df.loc[df["Meme"] == meme]
+        return meme_df.iloc[0, 2]
+    except:
+        return False
+
+
 def get_meme_list() -> str:
     try:
-        df = pd.read_excel("data/meme_bot_db.xlsx")
+        df = pd.read_excel("/home/pi/Projects/memeBot/data/meme_bot_db.xlsx")
         list_of_memes = df["Meme"].tolist()
         counter = 0
         summary = ""
@@ -168,6 +187,7 @@ def main():
     dispatcher.add_handler(CommandHandler("list", list_memes))
 
     # on noncommand i.e message - echo the message on Telegram
+    # dispatcher.add_handler(MessageHandler(Filters.sticker, get_sticker_id))
     dispatcher.add_handler(MessageHandler(Filters.text & ~Filters.command, echo))
     dispatcher.add_error_handler(error_handler)
 
