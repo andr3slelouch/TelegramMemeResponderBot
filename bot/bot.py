@@ -17,14 +17,23 @@ bot.
 
 import logging
 
-from telegram import Update, ParseMode
+from telegram import (
+    Update,
+    ParseMode,
+    Bot,
+    InlineQueryResultCachedSticker,
+    InputTextMessageContent,
+    InlineQueryResultArticle,
+)
 from telegram.ext import (
     Updater,
     CommandHandler,
     MessageHandler,
     Filters,
     CallbackContext,
+    InlineQueryHandler,
 )
+from telegram.utils.helpers import escape_markdown
 from datetime import datetime, timezone
 import re
 from unicodedata import normalize
@@ -32,6 +41,9 @@ import pandas as pd
 import traceback
 import html
 import json
+import random
+from uuid import uuid4
+import typing
 
 START_BOT_DATETIME = datetime.now(timezone.utc)
 
@@ -70,7 +82,9 @@ def echo(update: Update, context: CallbackContext) -> None:
 
 def get_sticker_id(update: Update, context: CallbackContext) -> None:
     sticker_id = update.message.sticker.file_id
-    if sticker_id:
+    id = str(update.message.from_user["id"])
+    chat_id = str(update.message.chat.id)
+    if sticker_id and id == str(232424901) and chat_id == str(232424901):
         context.bot.send_message(chat_id=232424901, text=str(sticker_id))
 
 
@@ -86,7 +100,7 @@ def id(update: Update, context: CallbackContext) -> None:
 def list_memes(update: Update, context: CallbackContext) -> None:
     """List all memes"""
     id = update.message.from_user["id"]
-    message = get_meme_list()
+    message = get_meme_list_summary()
     if message:
         context.bot.send_message(
             chat_id=update.effective_chat.id,
@@ -127,18 +141,206 @@ def get_meme_sticker(meme: str) -> str:
         return False
 
 
-def get_meme_list() -> str:
+def get_sticker_list() -> [str]:
+    try:
+        df = pd.read_excel("/home/pi/Projects/memeBot/data/meme_bot_db.xlsx")
+        list_of_memes = df["StickerID"].tolist()
+        return list_of_memes
+    except:
+        return False
+
+
+def get_meme_list() -> [str]:
     try:
         df = pd.read_excel("/home/pi/Projects/memeBot/data/meme_bot_db.xlsx")
         list_of_memes = df["Meme"].tolist()
-        counter = 0
-        summary = ""
+        return list_of_memes
+    except:
+        return False
+
+
+def get_meme_list_dict() -> dict:
+    try:
+        df = pd.read_excel("/home/pi/Projects/memeBot/data/meme_bot_db.xlsx")
+        list_of_memes = df["Meme"].tolist()
+        list_of_stickers = df["StickerID"].tolist()
+        stickers_dict = {}
+        for sticker, meme in zip(list_of_stickers, list_of_memes):
+            stickers_dict.update({sticker: [meme]})
+        return stickers_dict
+    except:
+        return False
+
+
+def get_meme_list_summary() -> str:
+    list_of_memes = get_meme_list()
+    counter = 0
+    summary = ""
+    if list_of_memes:
         for meme in list_of_memes:
             counter += 1
             summary += str(counter) + ". " + meme + "\n"
         return summary
-    except:
+    else:
         return False
+
+
+def random_stickers(n: int) -> [str]:
+    ids = get_sticker_list()
+    random.shuffle(ids)
+    return ids[:n]
+
+
+def into_words(q: str) -> [str]:
+    # Remove all syntax symbols
+    syntax_marks = ",.!?-"
+    for sym in syntax_marks:
+        q = q.replace(sym, " ")
+
+    # Split into words
+    words = q.lower().strip().split()
+    words = [w.strip() for w in words]
+    words = [w for w in words if w]
+
+    return words
+
+
+def word_in_words(word: str, words: [str]) -> bool:
+    for w in words:
+        if w.startswith(word):
+            return True
+    return False
+
+
+def search_stickers(query: str) -> [str]:
+    query_words = into_words(query)
+    dict_stickers = get_meme_list_dict()
+
+    stickers = []
+    for file_id, texts in dict_stickers.items():
+        texts_string = " ".join(texts).lower()
+        texts_words = into_words(texts_string)
+        if all([word_in_words(w, texts_words) for w in query_words]):
+            stickers.append(file_id)
+
+    return stickers
+
+
+def on_query(update: Update, context: CallbackContext):
+    # This constant is defined by the Bot API.
+    MAX_RESULTS = 50
+
+    inline_query = update.inline_query
+    query = inline_query.query
+    offset = update.inline_query.offset
+
+    if not inline_query:
+        return
+
+    # If query is empty - return random stickers.
+    return_random = not inline_query.query
+
+    if return_random:
+        stickers = random_stickers(MAX_RESULTS)
+    else:
+        stickers = search_stickers(inline_query.query)
+
+    if len(stickers) > MAX_RESULTS:
+        stickers = stickers[:MAX_RESULTS]
+
+    """ results = [
+        InlineQueryResultCachedSticker(id=uuid4(), sticker_file_id=fid)
+        for fid in stickers
+    ] """
+
+    """ cache_time = 600
+    if return_random:
+        # Do not cache random results.
+        cache_time = 0 """
+    """     results = list()
+    results.append(
+        InlineQueryResultCachedSticker(
+            id=uuid4(), sticker_file_id="BQADBAADXwADAtezAg6Zqq6f1-PwAg"
+        )
+    ) """
+    results: typing.List[InlineQueryResultCachedSticker] = []
+    print(stickers[0] + "\n")
+    for sticker_file_id in stickers:
+        results.append(
+            InlineQueryResultCachedSticker(
+                id=uuid4(),
+                sticker_file_id=sticker_file_id,
+                input_message_content=InputTextMessageContent(
+                    f"*{escape_markdown(query)}*", parse_mode=ParseMode.MARKDOWN
+                ),
+            ),
+        )
+
+    update.inline_query.answer(inline_query.id, results)
+
+
+def inlinequery(update: Update, context: CallbackContext) -> None:
+    """Handle the inline query."""
+    query = update.inline_query.query
+    """ results = [
+        InlineQueryResultArticle(
+            id=uuid4(),
+            title="Caps",
+            input_message_content=InputTextMessageContent(query.upper()),
+        ),
+        InlineQueryResultArticle(
+            id=uuid4(),
+            title="Bold",
+            input_message_content=InputTextMessageContent(
+                f"*{escape_markdown(query)}*", parse_mode=ParseMode.MARKDOWN
+            ),
+        ),
+        InlineQueryResultArticle(
+            id=uuid4(),
+            title="Italic",
+            input_message_content=InputTextMessageContent(
+                f"_{escape_markdown(query)}_", parse_mode=ParseMode.MARKDOWN
+            ),
+        ),
+        InlineQueryResultCachedSticker(
+            id=uuid4(),
+            title="Ejemplo",
+            sticker_file_id="BQADBAADXwADAtezAg6Zqq6f1-PwAg",
+        ),
+    ] """
+
+    results = []
+
+    # This constant is defined by the Bot API.
+    MAX_RESULTS = 50
+
+    inline_query = update.inline_query
+    query = update.inline_query.query
+    offset = update.inline_query.offset
+
+    if not inline_query:
+        return
+
+    # If query is empty - return random stickers.
+    return_random = not inline_query.query
+
+    if return_random:
+        stickers = random_stickers(MAX_RESULTS)
+    else:
+        stickers = search_stickers(inline_query.query)
+
+    if len(stickers) > MAX_RESULTS:
+        stickers = stickers[:MAX_RESULTS]
+
+    for sticker_file_id in stickers:
+        results.append(
+            InlineQueryResultCachedSticker(
+                id=uuid4(),
+                sticker_file_id=sticker_file_id,
+            ),
+        )
+
+    update.inline_query.answer(results)
 
 
 def error_handler(update: Update, context: CallbackContext) -> None:
@@ -186,8 +388,10 @@ def main():
     dispatcher.add_handler(CommandHandler("help", help_command))
     dispatcher.add_handler(CommandHandler("list", list_memes))
 
+    # add inlinequery
+    dispatcher.add_handler(InlineQueryHandler(inlinequery))
     # on noncommand i.e message - echo the message on Telegram
-    # dispatcher.add_handler(MessageHandler(Filters.sticker, get_sticker_id))
+    dispatcher.add_handler(MessageHandler(Filters.sticker, get_sticker_id))
     dispatcher.add_handler(MessageHandler(Filters.text & ~Filters.command, echo))
     dispatcher.add_error_handler(error_handler)
 
