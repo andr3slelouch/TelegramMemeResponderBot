@@ -44,6 +44,7 @@ import json
 import random
 from uuid import uuid4
 import typing
+import time
 
 START_BOT_DATETIME = datetime.now(timezone.utc)
 
@@ -97,14 +98,44 @@ def id(update: Update, context: CallbackContext) -> None:
     )
 
 
+# Taken from https://github.com/Koppal-Shree/telegram_gcloner/blob/4eda6ed55fbabae47c59aa81decdb15dc1f211bb/telegram_gcloner/utils/callback.py
+def callback_delete_message(context: CallbackContext):
+    (chat_id, message_id) = context.job.context
+    try:
+        context.bot.delete_message(chat_id=chat_id, message_id=message_id)
+    except Exception as e:
+        logger.warning("cannot delete message {}: {}".format(message_id, e))
+
+
 def list_memes(update: Update, context: CallbackContext) -> None:
     """List all memes"""
     id = update.message.from_user["id"]
-    message = get_meme_list_summary()
+    message = get_meme_list_summary(0)
     if message:
-        context.bot.send_message(
+        sended_msg = context.bot.send_message(
             chat_id=update.effective_chat.id,
             text=message,
+        )
+        context.job_queue.run_once(
+            callback_delete_message,
+            30,
+            context=(update.effective_chat.id, sended_msg.message_id),
+        )
+
+
+def top_memes(update: Update, context: CallbackContext) -> None:
+    """List all memes"""
+    id = update.message.from_user["id"]
+    message = get_meme_list_summary(10)
+    if message:
+        sended_msg = context.bot.send_message(
+            chat_id=update.effective_chat.id,
+            text=message,
+        )
+        context.job_queue.run_once(
+            callback_delete_message,
+            60,
+            context=(update.effective_chat.id, sended_msg.message_id),
         )
 
 
@@ -135,7 +166,7 @@ def get_meme_url(meme: str) -> str:
 def get_meme_sticker(meme: str) -> str:
     try:
         df = pd.read_excel("/home/pi/Projects/memeBot/data/meme_bot_db.xlsx")
-        meme_df = df.loc[df["Meme"] == meme]
+        meme_df = df[df["Meme"].str.contains(meme, na=False)]
         return meme_df.iloc[0, 2]
     except:
         return False
@@ -172,13 +203,26 @@ def get_meme_list_dict() -> dict:
         return False
 
 
-def get_meme_list_summary() -> str:
+def get_meme_list_summary(elements_from_last) -> str:
     list_of_memes = get_meme_list()
     counter = 0
     summary = ""
     if list_of_memes:
-        for meme in list_of_memes:
+        for meme in list_of_memes[elements_from_last * -1 :]:
             counter += 1
+            if "|" in meme:
+                splited_meme = meme.split("|")
+                variante_word = "variante"
+                if len(splited_meme) > 1:
+                    variante_word += "s"
+                meme = (
+                    str(splited_meme[0]).strip()
+                    + " ("
+                    + str(len(splited_meme))
+                    + " "
+                    + variante_word
+                    + ")"
+                )
             summary += str(counter) + ". " + meme + "\n"
         return summary
     else:
@@ -226,88 +270,9 @@ def search_stickers(query: str) -> [str]:
     return stickers
 
 
-def on_query(update: Update, context: CallbackContext):
-    # This constant is defined by the Bot API.
-    MAX_RESULTS = 50
-
-    inline_query = update.inline_query
-    query = inline_query.query
-    offset = update.inline_query.offset
-
-    if not inline_query:
-        return
-
-    # If query is empty - return random stickers.
-    return_random = not inline_query.query
-
-    if return_random:
-        stickers = random_stickers(MAX_RESULTS)
-    else:
-        stickers = search_stickers(inline_query.query)
-
-    if len(stickers) > MAX_RESULTS:
-        stickers = stickers[:MAX_RESULTS]
-
-    """ results = [
-        InlineQueryResultCachedSticker(id=uuid4(), sticker_file_id=fid)
-        for fid in stickers
-    ] """
-
-    """ cache_time = 600
-    if return_random:
-        # Do not cache random results.
-        cache_time = 0 """
-    """     results = list()
-    results.append(
-        InlineQueryResultCachedSticker(
-            id=uuid4(), sticker_file_id="BQADBAADXwADAtezAg6Zqq6f1-PwAg"
-        )
-    ) """
-    results: typing.List[InlineQueryResultCachedSticker] = []
-    print(stickers[0] + "\n")
-    for sticker_file_id in stickers:
-        results.append(
-            InlineQueryResultCachedSticker(
-                id=uuid4(),
-                sticker_file_id=sticker_file_id,
-                input_message_content=InputTextMessageContent(
-                    f"*{escape_markdown(query)}*", parse_mode=ParseMode.MARKDOWN
-                ),
-            ),
-        )
-
-    update.inline_query.answer(inline_query.id, results)
-
-
 def inlinequery(update: Update, context: CallbackContext) -> None:
     """Handle the inline query."""
     query = update.inline_query.query
-    """ results = [
-        InlineQueryResultArticle(
-            id=uuid4(),
-            title="Caps",
-            input_message_content=InputTextMessageContent(query.upper()),
-        ),
-        InlineQueryResultArticle(
-            id=uuid4(),
-            title="Bold",
-            input_message_content=InputTextMessageContent(
-                f"*{escape_markdown(query)}*", parse_mode=ParseMode.MARKDOWN
-            ),
-        ),
-        InlineQueryResultArticle(
-            id=uuid4(),
-            title="Italic",
-            input_message_content=InputTextMessageContent(
-                f"_{escape_markdown(query)}_", parse_mode=ParseMode.MARKDOWN
-            ),
-        ),
-        InlineQueryResultCachedSticker(
-            id=uuid4(),
-            title="Ejemplo",
-            sticker_file_id="BQADBAADXwADAtezAg6Zqq6f1-PwAg",
-        ),
-    ] """
 
     results = []
 
@@ -326,8 +291,12 @@ def inlinequery(update: Update, context: CallbackContext) -> None:
 
     if return_random:
         stickers = random_stickers(MAX_RESULTS)
+    elif query == "":
+        stickers = random_stickers(MAX_RESULTS)
     else:
         stickers = search_stickers(inline_query.query)
+
+    stickers = list(dict.fromkeys(stickers))
 
     if len(stickers) > MAX_RESULTS:
         stickers = stickers[:MAX_RESULTS]
@@ -339,8 +308,8 @@ def inlinequery(update: Update, context: CallbackContext) -> None:
                 sticker_file_id=sticker_file_id,
             ),
         )
-
-    update.inline_query.answer(results)
+    if len(results) > 0:
+        update.inline_query.answer(results)
 
 
 def error_handler(update: Update, context: CallbackContext) -> None:
@@ -387,6 +356,7 @@ def main():
     # dispatcher.add_handler(CommandHandler("id", id))
     dispatcher.add_handler(CommandHandler("help", help_command))
     dispatcher.add_handler(CommandHandler("list", list_memes))
+    dispatcher.add_handler(CommandHandler("top", top_memes))
 
     # add inlinequery
     dispatcher.add_handler(InlineQueryHandler(inlinequery))
