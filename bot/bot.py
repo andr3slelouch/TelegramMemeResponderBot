@@ -68,6 +68,14 @@ def help_command(update: Update, context: CallbackContext) -> None:
     update.message.reply_text("Help!")
 
 
+def word_count(string):
+    # Here we are removing the spaces from start and end,
+    # and breaking every word whenever we encounter a space
+    # and storing them in a list. The len of the list is the
+    # total count of words.
+    return len(string.strip().split(" "))
+
+
 def echo(update: Update, context: CallbackContext) -> None:
     """Echo the user message."""
     if hasattr(update.message, "date"):
@@ -75,10 +83,6 @@ def echo(update: Update, context: CallbackContext) -> None:
             meme = get_meme_sticker(string_normalizer(update.message.text))
             if meme:
                 update.message.reply_sticker(meme)
-            else:
-                meme = get_meme_url(string_normalizer(update.message.text))
-                if meme:
-                    update.message.reply_photo(meme)
 
 
 def get_sticker_id(update: Update, context: CallbackContext) -> None:
@@ -126,7 +130,7 @@ def list_memes(update: Update, context: CallbackContext) -> None:
 def top_memes(update: Update, context: CallbackContext) -> None:
     """List all memes"""
     id = update.message.from_user["id"]
-    message = get_meme_list_summary(10)
+    message = get_meme_list_summary(-10)
     if message:
         sended_msg = context.bot.send_message(
             chat_id=update.effective_chat.id,
@@ -154,20 +158,14 @@ def string_normalizer(phrase: str) -> str:
     return phrase
 
 
-def get_meme_url(meme: str) -> str:
-    try:
-        df = pd.read_excel("/home/pi/Projects/memeBot/data/meme_bot_db.xlsx")
-        meme_df = df.loc[df["Meme"] == meme]
-        return meme_df.iloc[0, 1]
-    except:
-        return False
-
-
 def get_meme_sticker(meme: str) -> str:
     try:
         df = pd.read_excel("/home/pi/Projects/memeBot/data/meme_bot_db.xlsx")
-        meme_df = df[df["Meme"].str.contains(meme, na=False)]
-        return meme_df.iloc[0, 2]
+        if word_count(meme) == 1:
+            meme_df = df.loc[df["Meme"] == meme]
+        else:
+            meme_df = df[df["Meme"].str.contains(meme, na=False)]
+        return meme_df.iloc[0, 1]
     except:
         return False
 
@@ -184,7 +182,8 @@ def get_sticker_list() -> [str]:
 def get_meme_list() -> [str]:
     try:
         df = pd.read_excel("/home/pi/Projects/memeBot/data/meme_bot_db.xlsx")
-        list_of_memes = df["Meme"].tolist()
+        shortened_df = df.tail(137)
+        list_of_memes = shortened_df["Meme"].tolist()
         return list_of_memes
     except:
         return False
@@ -208,9 +207,9 @@ def get_meme_list_summary(elements_from_last) -> str:
     counter = 0
     summary = ""
     if list_of_memes:
-        for meme in list_of_memes[elements_from_last * -1 :]:
+        for meme in list_of_memes[elements_from_last:]:
             counter += 1
-            if "|" in meme:
+            if "|" in str(meme):
                 splited_meme = meme.split("|")
                 variante_word = "variante"
                 if len(splited_meme) > 1:
@@ -223,7 +222,7 @@ def get_meme_list_summary(elements_from_last) -> str:
                     + variante_word
                     + ")"
                 )
-            summary += str(counter) + ". " + meme + "\n"
+            summary += str(counter) + ". " + str(meme) + "\n"
         return summary
     else:
         return False
