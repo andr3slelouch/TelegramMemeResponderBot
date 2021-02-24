@@ -78,7 +78,7 @@ def word_count(string):
 
 def prepare_words(string):
     list_words = string.strip().split("|")
-    return list_words
+    return [word.strip() for word in list_words]
 
 
 def echo(update: Update, context: CallbackContext) -> None:
@@ -166,15 +166,11 @@ def string_normalizer(phrase: str) -> str:
 def get_meme_sticker(meme: str) -> str:
     try:
         df = pd.read_excel("/home/pi/Projects/memeBot/data/meme_bot_db.xlsx")
-        if word_count(meme) == 1:
-            meme_df = df.loc[df["Meme"] == meme]
-            return meme_df.iloc[0, 1]
-        else:
-            for index, row in df.iterrows():
-                list_words = prepare_words(row["Meme"])
-                for submeme in list_words:
-                    if meme == submeme.strip():
-                        return row["StickerID"]
+        for index, row in df.iterrows():
+            list_words = prepare_words(row["Meme"])
+            for submeme in list_words:
+                if meme == submeme:
+                    return row["StickerID"]
     except:
         return False
 
