@@ -76,6 +76,11 @@ def word_count(string):
     return len(string.strip().split(" "))
 
 
+def prepare_words(string):
+    list_words = string.strip().split("|")
+    return list_words
+
+
 def echo(update: Update, context: CallbackContext) -> None:
     """Echo the user message."""
     if hasattr(update.message, "date"):
@@ -163,9 +168,13 @@ def get_meme_sticker(meme: str) -> str:
         df = pd.read_excel("/home/pi/Projects/memeBot/data/meme_bot_db.xlsx")
         if word_count(meme) == 1:
             meme_df = df.loc[df["Meme"] == meme]
+            return meme_df.iloc[0, 1]
         else:
-            meme_df = df[df["Meme"].str.contains(meme, na=False)]
-        return meme_df.iloc[0, 1]
+            for index, row in df.iterrows():
+                list_words = prepare_words(row["Meme"])
+                for submeme in list_words:
+                    if meme == submeme.strip():
+                        return row["StickerID"]
     except:
         return False
 
