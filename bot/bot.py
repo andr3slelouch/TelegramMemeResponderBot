@@ -45,6 +45,7 @@ import random
 from uuid import uuid4
 import typing
 import time
+from collections import OrderedDict
 
 START_BOT_DATETIME = datetime.now(timezone.utc)
 
@@ -242,7 +243,7 @@ def get_meme_list_summary(elements_from_last) -> str:
 def random_stickers(n: int) -> [str]:
     ids = get_sticker_list()
     random.shuffle(ids)
-    return ids[:n]
+    return list(OrderedDict.fromkeys(ids[:n]))
 
 
 def random_meme(update: Update, context: CallbackContext) -> None:
@@ -259,7 +260,7 @@ def random_meme(update: Update, context: CallbackContext) -> None:
         for sticker in sticker_to_send:
             sended_msg = context.bot.send_sticker(
                 chat_id=update.effective_chat.id,
-                sticker=sticker_to_send[0],
+                sticker=sticker,
             )
 
 
@@ -294,10 +295,12 @@ def search_stickers(query: str) -> [str]:
         texts_words = into_words(texts_string)
         if "|" in file_id:
             file_id = prepare_words(file_id)[0]
+        if "*" in texts:
+            continue
         if all([word_in_words(w, texts_words) for w in query_words]):
             stickers.append(file_id)
 
-    return stickers
+    return list(OrderedDict.fromkeys(stickers))
 
 
 def inlinequery(update: Update, context: CallbackContext) -> None:
