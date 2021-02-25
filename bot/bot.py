@@ -86,8 +86,11 @@ def echo(update: Update, context: CallbackContext) -> None:
     if hasattr(update.message, "date"):
         if update.message.date > START_BOT_DATETIME:
             meme = get_meme_sticker(string_normalizer(update.message.text))
-            if meme:
+            if meme and type(meme) is not list:
                 update.message.reply_sticker(meme)
+            elif type(meme) is list:
+                for sticker in meme:
+                    update.message.reply_sticker(sticker)
 
 
 def get_sticker_id(update: Update, context: CallbackContext) -> None:
@@ -170,7 +173,10 @@ def get_meme_sticker(meme: str) -> str:
             list_words = prepare_words(row["Meme"])
             for submeme in list_words:
                 if meme == submeme:
-                    return row["StickerID"]
+                    if not "|" in row["StickerID"]:
+                        return row["StickerID"]
+                    else:
+                        return prepare_words(row["StickerID"])
     except:
         return False
 
@@ -239,6 +245,24 @@ def random_stickers(n: int) -> [str]:
     return ids[:n]
 
 
+def random_meme(update: Update, context: CallbackContext) -> None:
+    """Send a random sticker"""
+    id = update.message.from_user["id"]
+    sticker_to_send = random_stickers(1)
+    if not "|" in sticker_to_send[0]:
+        sended_msg = context.bot.send_sticker(
+            chat_id=update.effective_chat.id,
+            sticker=sticker_to_send[0],
+        )
+    else:
+        stickers_to_send = prepare_words(sticker_to_send[0])
+        for sticker in sticker_to_send:
+            sended_msg = context.bot.send_sticker(
+                chat_id=update.effective_chat.id,
+                sticker=sticker_to_send[0],
+            )
+
+
 def into_words(q: str) -> [str]:
     # Remove all syntax symbols
     syntax_marks = ",.!?-"
@@ -268,6 +292,8 @@ def search_stickers(query: str) -> [str]:
     for file_id, texts in dict_stickers.items():
         texts_string = " ".join(texts).lower()
         texts_words = into_words(texts_string)
+        if "|" in file_id:
+            file_id = prepare_words(file_id)[0]
         if all([word_in_words(w, texts_words) for w in query_words]):
             stickers.append(file_id)
 
@@ -361,6 +387,7 @@ def main():
     dispatcher.add_handler(CommandHandler("help", help_command))
     dispatcher.add_handler(CommandHandler("list", list_memes))
     dispatcher.add_handler(CommandHandler("top", top_memes))
+    dispatcher.add_handler(CommandHandler("random", random_meme))
 
     # add inlinequery
     dispatcher.add_handler(InlineQueryHandler(inlinequery))
