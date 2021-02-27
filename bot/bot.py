@@ -243,6 +243,11 @@ def get_meme_list_summary(elements_from_last) -> str:
 def random_stickers(n: int) -> [str]:
     ids = get_sticker_list()
     random.shuffle(ids)
+    for meme in ids:
+        if "|" in meme:
+            ids.remove(meme)
+            for substicker in meme.split("|"):
+                ids.append(substicker.strip())
     return list(OrderedDict.fromkeys(ids[:n]))
 
 
@@ -293,12 +298,14 @@ def search_stickers(query: str) -> [str]:
     for file_id, texts in dict_stickers.items():
         texts_string = " ".join(texts).lower()
         texts_words = into_words(texts_string)
-        if "|" in file_id:
-            file_id = prepare_words(file_id)[0]
         if "*" in texts:
             continue
         if all([word_in_words(w, texts_words) for w in query_words]):
-            stickers.append(file_id)
+            if "|" in file_id:
+                for sticker in prepare_words(file_id):
+                    stickers.append(sticker)
+            else:
+                stickers.append(file_id)
 
     return list(OrderedDict.fromkeys(stickers))
 
