@@ -5,17 +5,13 @@
 # This program is dedicated to the public domain under the CC0 license.
 
 """
-Simple Bot to reply to Telegram messages.
-First, a few handler functions are defined. Then, those functions are passed to
-the Dispatcher and registered at their respective places.
-Then, the bot is started and runs until we press Ctrl-C on the command line.
-Usage:
-Basic Echobot example, repeats messages.
-Press Ctrl-C on the command line or send a signal to the process to stop the
-bot.
+This code is based in Simple Bot to reply to Telegram messages example located
+in https://github.com/python-telegram-bot/python-telegram-bot/blob/master/examples/echobot.py.
+
 """
 
 import logging
+import configuration
 
 from telegram import (
     Update,
@@ -77,7 +73,15 @@ def word_count(string):
     return len(string.strip().split(" "))
 
 
-def prepare_words(string):
+def prepare_words(string) -> list:
+    """This function prepare a string that has | in his content and split in a list
+
+    Args:
+        string (str): Wort to be splitted
+
+    Returns:
+        list: A list that contains the string splitted in a list
+    """
     list_words = string.strip().split("|")
     return [word.strip() for word in list_words]
 
@@ -95,6 +99,7 @@ def echo(update: Update, context: CallbackContext) -> None:
 
 
 def get_sticker_id(update: Update, context: CallbackContext) -> None:
+    """This funtion returns the id of the sticker and send it to the admin user"""
     sticker_id = update.message.sticker.file_id
     id = str(update.message.from_user["id"])
     chat_id = str(update.message.chat.id)
@@ -103,7 +108,7 @@ def get_sticker_id(update: Update, context: CallbackContext) -> None:
 
 
 def id(update: Update, context: CallbackContext) -> None:
-    """Echo the user message."""
+    """Answer the id user"""
     id = update.message.from_user["id"]
     context.bot.send_message(
         chat_id=update.effective_chat.id,
@@ -113,6 +118,7 @@ def id(update: Update, context: CallbackContext) -> None:
 
 # Taken from https://github.com/Koppal-Shree/telegram_gcloner/blob/4eda6ed55fbabae47c59aa81decdb15dc1f211bb/telegram_gcloner/utils/callback.py
 def callback_delete_message(context: CallbackContext):
+    """This callback function allow to delete a message"""
     (chat_id, message_id) = context.job.context
     try:
         context.bot.delete_message(chat_id=chat_id, message_id=message_id)
@@ -137,7 +143,7 @@ def list_memes(update: Update, context: CallbackContext) -> None:
 
 
 def top_memes(update: Update, context: CallbackContext) -> None:
-    """List all memes"""
+    """List Top 10 last memes"""
     id = update.message.from_user["id"]
     message = get_meme_list_summary(-10)
     if message:
@@ -153,6 +159,14 @@ def top_memes(update: Update, context: CallbackContext) -> None:
 
 
 def string_normalizer(phrase: str) -> str:
+    """This functions is made for clean any character different to ascii
+
+    Args:
+        phrase (str): Phrase to be normalized
+
+    Returns:
+        str: Normalized string to be compared to memes in list
+    """
     phrase = re.sub(
         r"([^n\u0300-\u036f]|n(?!\u0303(?![\u0300-\u036f])))[\u0300-\u036f]+",
         r"\1",
@@ -168,6 +182,14 @@ def string_normalizer(phrase: str) -> str:
 
 
 def get_meme_sticker(meme: str) -> str:
+    """Find the sticker in excel and return its id
+
+    Args:
+        meme (str): Meme phrase to search
+
+    Returns:
+        str: Returns the id of the sticker to be sended
+    """
     try:
         df = pd.read_excel("/home/pi/Projects/memeBot/data/meme_bot_db.xlsx")
         for index, row in df.iterrows():
@@ -183,6 +205,11 @@ def get_meme_sticker(meme: str) -> str:
 
 
 def get_sticker_list() -> [str]:
+    """Makes a list from all thestickers in excel
+
+    Returns:
+        [str]: List of stickers
+    """
     try:
         df = pd.read_excel("/home/pi/Projects/memeBot/data/meme_bot_db.xlsx")
         list_of_memes = df["StickerID"].tolist()
@@ -192,6 +219,11 @@ def get_sticker_list() -> [str]:
 
 
 def get_meme_list() -> [str]:
+    """Makes a list from all the memes in excel
+
+    Returns:
+        [str]: List of memes
+    """
     try:
         df = pd.read_excel("/home/pi/Projects/memeBot/data/meme_bot_db.xlsx")
         shortened_df = df.tail(137)
@@ -202,6 +234,7 @@ def get_meme_list() -> [str]:
 
 
 def get_meme_list_dict() -> dict:
+    """Makes a dict with all the memes and stickers."""
     try:
         df = pd.read_excel("/home/pi/Projects/memeBot/data/meme_bot_db.xlsx")
         list_of_memes = df["Meme"].tolist()
@@ -214,7 +247,15 @@ def get_meme_list_dict() -> dict:
         return False
 
 
-def get_meme_list_summary(elements_from_last) -> str:
+def get_meme_list_summary(elements_from_last: int) -> str:
+    """Prepares the a list of the last memes to be sended as string
+
+    Args:
+        elements_from_last (int): How much elements are required
+
+    Returns:
+        str: The summary of memes
+    """
     list_of_memes = get_meme_list()
     counter = 0
     summary = ""
@@ -241,6 +282,14 @@ def get_meme_list_summary(elements_from_last) -> str:
 
 
 def random_stickers(n: int) -> [str]:
+    """Returns a random list of stickers
+
+    Args:
+        n (int): How much memes are required
+
+    Returns:
+        [str]: The list of the required stickers
+    """
     ids = get_sticker_list()
     random.shuffle(ids)
     for meme in ids:
@@ -270,6 +319,14 @@ def random_meme(update: Update, context: CallbackContext) -> None:
 
 
 def into_words(q: str) -> [str]:
+    """This function split a string to his characters
+
+    Args:
+        q (str): String to be splitted
+
+    Returns:
+        [str]: List of characters
+    """
     # Remove all syntax symbols
     syntax_marks = ",.!?-"
     for sym in syntax_marks:
@@ -284,6 +341,15 @@ def into_words(q: str) -> [str]:
 
 
 def word_in_words(word: str, words: [str]) -> bool:
+    """Returns if a word exists inside the list of words
+
+    Args:
+        word (str): Word to be finded
+        words ([str]): List of words
+
+    Returns:
+        bool: Returns True if the word is found else False
+    """
     for w in words:
         if w.startswith(word):
             return True
@@ -291,6 +357,14 @@ def word_in_words(word: str, words: [str]) -> bool:
 
 
 def search_stickers(query: str) -> [str]:
+    """This function finds a meme andreturns his repective stickers
+
+    Args:
+        query (str): Meme to be found
+
+    Returns:
+        [str]: List of stickers ids to be used in inlinequery
+    """
     query_words = into_words(query)
     dict_stickers = get_meme_list_dict()
 
@@ -385,7 +459,9 @@ def main():
     # Make sure to set use_context=True to use the new context based callbacks
     # Post version 12 this will no longer be necessary
     updater = Updater(
-        "1515669604:AAHH4PLj_dF6w01Ke16DJ30w04aCHEImxwk", use_context=True
+        token=configuration.get_bot_token(
+            configuration.get_file_location("config.yaml")
+        ),
     )
 
     # Get the dispatcher to register handlers
