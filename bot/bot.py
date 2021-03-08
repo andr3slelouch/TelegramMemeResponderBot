@@ -12,6 +12,8 @@ in https://github.com/python-telegram-bot/python-telegram-bot/blob/master/exampl
 
 import logging
 import configuration
+import image_converter
+import os
 
 from telegram import (
     Update,
@@ -426,6 +428,26 @@ def inlinequery(update: Update, context: CallbackContext) -> None:
         update.inline_query.answer(results)
 
 
+def answer_webp(update: Update, context: CallbackContext) -> None:
+    id = str(update.message.from_user["id"])
+    chat_id = str(update.message.chat.id)
+    if (
+        len(update.message.photo) > 0
+        and id == str(232424901)
+        and chat_id == str(232424901)
+    ):
+        photo = update.message.photo[-1]
+        newFile = photo.get_file()
+        temp_file_path = newFile.file_path
+        extw = temp_file_path.split("/")
+        fname = extw[len(extw) - 1]
+        newFile.download(fname)
+        sticker_fname = image_converter.convert_image(fname, "jpg")
+        update.message.reply_sticker(open(sticker_fname, "rb"))
+        os.remove(fname)
+        os.remove(sticker_fname)
+
+
 def error_handler(update: Update, context: CallbackContext) -> None:
     """Log the error and send a telegram message to notify the developer."""
     # Log the error before we do anything else, so we can see it even if something breaks.
@@ -479,6 +501,7 @@ def main():
     dispatcher.add_handler(InlineQueryHandler(inlinequery))
     # on noncommand i.e message - echo the message on Telegram
     dispatcher.add_handler(MessageHandler(Filters.sticker, get_sticker_id))
+    dispatcher.add_handler(MessageHandler(Filters.photo, answer_webp))
     dispatcher.add_handler(MessageHandler(Filters.text & ~Filters.command, echo))
     dispatcher.add_error_handler(error_handler)
 
