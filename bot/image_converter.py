@@ -25,11 +25,15 @@ def convert_image(image_path, image_type, custom_size=512) -> str:
 
     # Saving the images based upon their specific type:
     if image_type == "jpg" or image_type == "png":
+        """
         if not im.size[0] == 512:
             im.thumbnail(size=((custom_size, custom_size)))
             im.save(f"{image_name}.webp", "webp")
         else:
             im.save(f"{image_name}.webp", "webp")
+        """
+        im.thumbnail(size=((custom_size, custom_size)))
+        im.save(f"{image_name}.webp", "webp")
         return f"{image_name}.webp"
     else:
         # Raising an error if we didn't get a jpeg or png file type!

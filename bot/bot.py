@@ -429,7 +429,10 @@ def inlinequery(update: Update, context: CallbackContext) -> None:
 
 
 def answer_webp(update: Update, context: CallbackContext) -> None:
-    id = str(update.message.from_user["id"])
+    try:
+        id = str(update.message.from_user["id"])
+    except:
+        id = ""
     chat_id = str(update.message.chat.id)
     if (
         len(update.message.photo) > 0
