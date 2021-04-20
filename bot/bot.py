@@ -98,6 +98,8 @@ def echo(update: Update, context: CallbackContext) -> None:
             elif type(meme) is list:
                 for sticker in meme:
                     update.message.reply_sticker(sticker)
+            elif string_normalizer(update.message.text) == "pinche bot":
+                random_meme(update, context)
 
 
 def get_sticker_id(update: Update, context: CallbackContext) -> None:
