@@ -1,2 +1,3 @@
 cp "/home/andres/Insync/luis.andradec14@gmail.com/Google Drive/Projects/MemeBotDatabase/meme_bot_db.xlsx" ./data/
-sshpass -p "kakaroto" rsync -a bot data pi@192.168.1.3:/home/pi/Projects/memeBot
+sshpass -p "YOUR PASSWORD" rsync -a bot data pi@"YOUR SERVER IP":/home/pi/Projects/memeBot
+
