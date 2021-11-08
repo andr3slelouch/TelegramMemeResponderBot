@@ -98,7 +98,13 @@ def echo(update: Update, context: CallbackContext) -> None:
             elif type(meme) is list:
                 for sticker in meme:
                     update.message.reply_sticker(sticker)
-            elif string_normalizer(update.message.text) == "pinche bot":
+            elif (
+                string_normalizer(update.message.text) == "pinche bot"
+                or string_normalizer(update.message.text) == "bot culiao"
+                or string_normalizer(update.message.text) == "bot cdlbv"
+                or string_normalizer(update.message.text) == "bot conchatumadre"
+                or string_normalizer(update.message.text) == "bot crvrg"
+            ):
                 random_meme(update, context)
 
 
@@ -133,7 +139,7 @@ def callback_delete_message(context: CallbackContext):
 def list_memes(update: Update, context: CallbackContext) -> None:
     """List all memes"""
     id = update.message.from_user["id"]
-    message = get_meme_list_summary(0)
+    message = get_meme_list_summary(-100)
     if message:
         sended_msg = context.bot.send_message(
             chat_id=update.effective_chat.id,
@@ -222,6 +228,20 @@ def get_sticker_list() -> [str]:
         return False
 
 
+def get_jojo_pose_list() -> [str]:
+    """Makes a list from all jojo poses in excel file
+
+    Returns:
+        [str]: List of stickers
+    """
+    try:
+        df = pd.read_excel("/home/pi/Projects/memeBot/data/JoJo_Poses.xlsx")
+        list_of_memes = df["URL"].tolist()
+        return list_of_memes
+    except:
+        return False
+
+
 def get_meme_list() -> [str]:
     """Makes a list from all the memes in excel
 
@@ -230,7 +250,7 @@ def get_meme_list() -> [str]:
     """
     try:
         df = pd.read_excel("/home/pi/Projects/memeBot/data/meme_bot_db.xlsx")
-        shortened_df = df.tail(137)
+        shortened_df = df.tail(130)
         list_of_memes = shortened_df["Meme"].tolist()
         return list_of_memes
     except:
@@ -304,6 +324,21 @@ def random_stickers(n: int) -> [str]:
     return list(OrderedDict.fromkeys(ids[:n]))
 
 
+def random_pose(n: int) -> [str]:
+    """Returns a random list of stickers
+
+    Args:
+        n (int): How much memes are required
+
+    Returns:
+        [str]: The list of the required stickers
+    """
+    urls = get_jojo_pose_list()
+    random.shuffle(urls)
+    list_to_return = list(OrderedDict.fromkeys(urls[:n]))
+    return list_to_return
+
+
 def random_meme(update: Update, context: CallbackContext) -> None:
     """Send a random sticker"""
     id = update.message.from_user["id"]
@@ -320,6 +355,14 @@ def random_meme(update: Update, context: CallbackContext) -> None:
                 chat_id=update.effective_chat.id,
                 sticker=sticker,
             )
+
+
+def jojo_pose(update: Update, context: CallbackContext) -> None:
+    """Send a random sticker"""
+    id = update.message.from_user["id"]
+    sticker_to_send = random_pose(1)
+    print(sticker_to_send)
+    sended_msg = context.bot.send_photo(chat_id=id, photo=sticker_to_send[0])
 
 
 def into_words(q: str) -> [str]:
@@ -501,6 +544,7 @@ def main():
     dispatcher.add_handler(CommandHandler("list", list_memes))
     dispatcher.add_handler(CommandHandler("top", top_memes))
     dispatcher.add_handler(CommandHandler("random", random_meme))
+    dispatcher.add_handler(CommandHandler("pose", jojo_pose))
 
     # add inlinequery
     dispatcher.add_handler(InlineQueryHandler(inlinequery))
