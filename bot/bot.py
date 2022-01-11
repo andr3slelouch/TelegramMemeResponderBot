@@ -87,6 +87,12 @@ def prepare_words(string) -> list:
     list_words = string.strip().split("|")
     return [word.strip() for word in list_words]
 
+def greet_new_chat_members(update: Update, context: CallbackContext):
+    bot = Bot(token=configuration.get_bot_token(
+            configuration.get_file_location("config.yaml")
+        ))
+    bot.send_animation(update.effective_chat.id,"https://media.giphy.com/media/Vste8Y15c34zK/giphy.gif")
+    print("SENT GIF")
 
 def echo(update: Update, context: CallbackContext) -> None:
     """Echo the user message."""
@@ -552,6 +558,7 @@ def main():
     dispatcher.add_handler(MessageHandler(Filters.sticker, get_sticker_id))
     dispatcher.add_handler(MessageHandler(Filters.photo, answer_webp))
     dispatcher.add_handler(MessageHandler(Filters.text & ~Filters.command, echo))
+    dispatcher.add_handler(MessageHandler(Filters.status_update.new_chat_members,greet_new_chat_members))
     dispatcher.add_error_handler(error_handler)
 
     # Start the Bot
