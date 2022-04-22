@@ -205,7 +205,7 @@ def unban_handler(update: Update, context: CallbackContext) -> None:
                                 delete_banned_user_csv(update.effective_chat.id, id_element)
 
 
-def get_user_from_id(update: Update, context: CallbackContext, user_id: str) -> Any | None:
+def get_user_from_id(update: Update, context: CallbackContext, user_id: str):
     try:
         chat_member = context.bot.get_chat_member(update.effective_chat.id, int(user_id))
         return chat_member.user
