@@ -11,6 +11,7 @@ in https://github.com/python-telegram-bot/python-telegram-bot/blob/master/exampl
 """
 
 import logging
+from typing import Any
 import configuration
 import image_converter
 import os
@@ -20,8 +21,6 @@ from telegram import (
     ParseMode,
     Bot,
     InlineQueryResultCachedSticker,
-    InputTextMessageContent,
-    InlineQueryResultArticle,
 )
 from telegram.ext import (
     Updater,
@@ -31,9 +30,7 @@ from telegram.ext import (
     CallbackContext,
     InlineQueryHandler,
 )
-from telegram.utils.helpers import escape_markdown
 from datetime import datetime, timezone
-import re
 from unicodedata import normalize
 import pandas as pd
 import traceback
@@ -41,9 +38,13 @@ import html
 import json
 import random
 from uuid import uuid4
-import typing
-import time
 from collections import OrderedDict
+import csv
+import re
+
+JO_JO_POSES_XLSX = "/home/pi/Projects/memeBot/data/JoJo_Poses.xlsx"
+
+MEME_BOT_DB_XLSX = "/home/pi/Projects/memeBot/data/meme_bot_db.xlsx"
 
 START_BOT_DATETIME = datetime.now(timezone.utc)
 
@@ -87,12 +88,14 @@ def prepare_words(string) -> list:
     list_words = string.strip().split("|")
     return [word.strip() for word in list_words]
 
+
 def greet_new_chat_members(update: Update, context: CallbackContext):
     bot = Bot(token=configuration.get_bot_token(
-            configuration.get_file_location("config.yaml")
-        ))
-    bot.send_animation(update.effective_chat.id,"https://media.giphy.com/media/Vste8Y15c34zK/giphy.gif")
+        configuration.get_file_location("config.yaml")
+    ))
+    bot.send_animation(update.effective_chat.id, "https://media.giphy.com/media/Vste8Y15c34zK/giphy.gif")
     print("SENT GIF")
+
 
 def echo(update: Update, context: CallbackContext) -> None:
     """Echo the user message."""
@@ -105,34 +108,34 @@ def echo(update: Update, context: CallbackContext) -> None:
                 for sticker in meme:
                     update.message.reply_sticker(sticker)
             elif (
-                string_normalizer(update.message.text) == "pinche bot"
-                or string_normalizer(update.message.text) == "bot culiao"
-                or string_normalizer(update.message.text) == "bot cdlbv"
-                or string_normalizer(update.message.text) == "bot conchatumadre"
-                or string_normalizer(update.message.text) == "bot crvrg"
+                    string_normalizer(update.message.text) == "pinche bot"
+                    or string_normalizer(update.message.text) == "bot culiao"
+                    or string_normalizer(update.message.text) == "bot cdlbv"
+                    or string_normalizer(update.message.text) == "bot conchatumadre"
+                    or string_normalizer(update.message.text) == "bot crvrg"
             ):
                 random_meme(update, context)
 
 
 def get_sticker_id(update: Update, context: CallbackContext) -> None:
-    """This funtion returns the id of the sticker and send it to the admin user"""
-    sticker_id = update.message.sticker.file_id
-    id = str(update.message.from_user["id"])
+    """This function returns the id of the sticker and send it to the admin user"""
+    sticker_id = str(update.message.from_user["id"])
     chat_id = str(update.message.chat.id)
-    if sticker_id and id == str(232424901) and chat_id == str(232424901):
+    if sticker_id and sticker_id == str(232424901) and chat_id == str(232424901):
         context.bot.send_message(chat_id=232424901, text=str(sticker_id))
 
 
-def id(update: Update, context: CallbackContext) -> None:
+def get_id(update: Update, context: CallbackContext) -> None:
     """Answer the id user"""
-    id = update.message.from_user["id"]
+    user_id = update.message.from_user["id"]
     context.bot.send_message(
         chat_id=update.effective_chat.id,
-        text=str(id),
+        text=str(user_id),
     )
 
 
-# Taken from https://github.com/Koppal-Shree/telegram_gcloner/blob/4eda6ed55fbabae47c59aa81decdb15dc1f211bb/telegram_gcloner/utils/callback.py
+# Taken from https://github.com/Koppal-Shree/telegram_gcloner/blob/4eda6ed55fbabae47c59aa81decdb15dc1f211bb
+# /telegram_gcloner/utils/callback.py
 def callback_delete_message(context: CallbackContext):
     """This callback function allow to delete a message"""
     (chat_id, message_id) = context.job.context
@@ -144,33 +147,125 @@ def callback_delete_message(context: CallbackContext):
 
 def list_memes(update: Update, context: CallbackContext) -> None:
     """List all memes"""
-    id = update.message.from_user["id"]
     message = get_meme_list_summary(-100)
     if message:
-        sended_msg = context.bot.send_message(
+        sent_msg = context.bot.send_message(
             chat_id=update.effective_chat.id,
             text=message,
         )
         context.job_queue.run_once(
             callback_delete_message,
             30,
-            context=(update.effective_chat.id, sended_msg.message_id),
+            context=(update.effective_chat.id, sent_msg.message_id),
         )
+
+
+def ban_handler(update: Update, context: CallbackContext) -> None:
+    if update.effective_chat.type != "private":
+        member_status = context.bot.get_chat_member(update.effective_chat.id, update.message.from_user["id"]).status
+        if member_status == "creator" or member_status == "administrator":
+            if update.message.reply_to_message is not None:
+                add_banned_users_csv(update.effective_chat.id, str(update.message.reply_to_message.from_user["id"]))
+            if update.message.entities is not None:
+                for entity in update.message.entities:
+                    if entity.type.find("text_mention") != -1:
+                        print(entity.to_dict())
+                        add_banned_users_csv(update.effective_chat.id, entity.user.id)
+            if len(update.message.text.split(" ")) > 0:
+                list_ids = update.message.text.split(" ")
+                for id_element in list_ids:
+                    if re.search("^(\\+|-)?\\d+$", id_element):
+                        if get_user_from_id(update, context, id_element) is not None:
+                            add_banned_users_csv(update.effective_chat.id, id_element)
+                    elif id_element[0] == "@":
+                        add_banned_users_csv(update.effective_chat.id, id_element)
+
+
+def unban_handler(update: Update, context: CallbackContext) -> None:
+    if update.effective_chat.type != "private":
+        member_status = context.bot.get_chat_member(update.effective_chat.id, update.message.from_user["id"]).status
+        if member_status == "creator" or member_status == "administrator":
+            banned_users = read_banned_users_csv()
+            if len(banned_users) == 2:
+                if str(update.effective_chat.id) in banned_users[0]:
+                    if update.message.reply_to_message is not None:
+                        delete_banned_user_csv(update.effective_chat.id,
+                                               str(update.message.reply_to_message.from_user["id"]))
+                    if update.message.entities is not None:
+                        for entity in update.message.entities:
+                            if entity.type.find("text_mention") != -1:
+                                delete_banned_user_csv(update.effective_chat.id, entity.user.id)
+                    if len(update.message.text.split(" ")) > 0:
+                        list_ids = update.message.text.split(" ")
+                        for id_element in list_ids:
+                            if re.search("^(\\+|-)?\\d+$", id_element):
+                                if get_user_from_id(update, context, id_element) is not None:
+                                    delete_banned_user_csv(update.effective_chat.id, id_element)
+                            elif id_element[0] == "@":
+                                delete_banned_user_csv(update.effective_chat.id, id_element)
+
+
+def get_user_from_id(update: Update, context: CallbackContext, user_id: str) -> Any | None:
+    try:
+        chat_member = context.bot.get_chat_member(update.effective_chat.id, int(user_id))
+        return chat_member.user
+    except Exception as e:
+        print(e)
+        return None
+
+
+def read_banned_users_csv() -> list:
+    # reading csv file
+    # creating a csv reader object
+    csvreader = csv.DictReader(open("/home/pi/Projects/memeBot/data/banned_users.csv", 'r'))
+    groups = []
+    users = []
+    for col in csvreader:
+        groups.append(col["group"])
+        users.append(col["user"])
+    return [groups, users]
+
+
+def add_banned_users_csv(group_id: str, user_id: str) -> None:
+    # reading csv file
+    # creating a csv reader object
+    list_banned_users = []
+    banned_users = read_banned_users_csv()
+    user_to_add = {"group": group_id, "user": user_id}
+    for (group, user) in zip(banned_users[0], banned_users[1]):
+        list_banned_users.append({"group": group, "user": user})
+    if not user_to_add in list_banned_users:
+        keys = list_banned_users[0].keys()
+        with open('/home/pi/Projects/memeBot/data/banned_users.csv', 'w', newline='') as output_file:
+            dict_writer = csv.DictWriter(output_file, keys)
+            dict_writer.writeheader()
+            dict_writer.writerows(list_banned_users)
+
+
+def delete_banned_user_csv(group_id: str, user_id: str) -> list:
+    # reading csv file
+    # creating a csv reader object
+    csvreader = csv.DictReader(open("/home/pi/Projects/memeBot/data/banned_users.csv", 'r'))
+    groups = []
+    users = []
+    for col in csvreader:
+        groups.append(col["group"])
+        users.append(col["user"])
+    return [groups, users]
 
 
 def top_memes(update: Update, context: CallbackContext) -> None:
     """List Top 10 last memes"""
-    id = update.message.from_user["id"]
     message = get_meme_list_summary(-10)
     if message:
-        sended_msg = context.bot.send_message(
+        sent_msg = context.bot.send_message(
             chat_id=update.effective_chat.id,
             text=message,
         )
         context.job_queue.run_once(
             callback_delete_message,
             60,
-            context=(update.effective_chat.id, sended_msg.message_id),
+            context=(update.effective_chat.id, sent_msg.message_id),
         )
 
 
@@ -207,16 +302,16 @@ def get_meme_sticker(meme: str) -> str:
         str: Returns the id of the sticker to be sended
     """
     try:
-        df = pd.read_excel("/home/pi/Projects/memeBot/data/meme_bot_db.xlsx")
+        df = pd.read_excel(MEME_BOT_DB_XLSX )
         for index, row in df.iterrows():
             list_words = prepare_words(row["Meme"])
-            for submeme in list_words:
-                if meme == submeme:
+            for sub_meme in list_words:
+                if meme == sub_meme:
                     if not "|" in row["StickerID"]:
                         return row["StickerID"]
                     else:
                         return prepare_words(row["StickerID"])
-    except:
+    except Exception as e:
         return False
 
 
@@ -227,10 +322,10 @@ def get_sticker_list() -> [str]:
         [str]: List of stickers
     """
     try:
-        df = pd.read_excel("/home/pi/Projects/memeBot/data/meme_bot_db.xlsx")
+        df = pd.read_excel(MEME_BOT_DB_XLSX)
         list_of_memes = df["StickerID"].tolist()
         return list_of_memes
-    except:
+    except Exception as e:
         return False
 
 
@@ -241,25 +336,25 @@ def get_jojo_pose_list() -> [str]:
         [str]: List of stickers
     """
     try:
-        df = pd.read_excel("/home/pi/Projects/memeBot/data/JoJo_Poses.xlsx")
+        df = pd.read_excel(JO_JO_POSES_XLSX)
         list_of_memes = df["URL"].tolist()
         return list_of_memes
-    except:
+    except Exception as e:
         return False
 
 
 def get_meme_list() -> [str]:
-    """Makes a list from all the memes in excel
+    """Makes a list from all the memes in Excel
 
     Returns:
         [str]: List of memes
     """
     try:
-        df = pd.read_excel("/home/pi/Projects/memeBot/data/meme_bot_db.xlsx")
+        df = pd.read_excel(MEME_BOT_DB_XLSX )
         shortened_df = df.tail(130)
         list_of_memes = shortened_df["Meme"].tolist()
         return list_of_memes
-    except:
+    except Exception as e:
         return False
 
 
@@ -273,7 +368,7 @@ def get_meme_list_dict() -> dict:
         for sticker, meme in zip(list_of_stickers, list_of_memes):
             stickers_dict.update({sticker: [meme]})
         return stickers_dict
-    except:
+    except Exception as e:
         return False
 
 
@@ -298,12 +393,12 @@ def get_meme_list_summary(elements_from_last: int) -> str:
                 if len(splited_meme) > 1:
                     variante_word += "s"
                 meme = (
-                    str(splited_meme[0]).strip()
-                    + " ("
-                    + str(len(splited_meme))
-                    + " "
-                    + variante_word
-                    + ")"
+                        str(splited_meme[0]).strip()
+                        + " ("
+                        + str(len(splited_meme))
+                        + " "
+                        + variante_word
+                        + ")"
                 )
             summary += str(counter) + ". " + str(meme) + "\n"
         return summary
@@ -347,17 +442,16 @@ def random_pose(n: int) -> [str]:
 
 def random_meme(update: Update, context: CallbackContext) -> None:
     """Send a random sticker"""
-    id = update.message.from_user["id"]
     sticker_to_send = random_stickers(1)
     if not "|" in sticker_to_send[0]:
-        sended_msg = context.bot.send_sticker(
+        context.bot.send_sticker(
             chat_id=update.effective_chat.id,
             sticker=sticker_to_send[0],
         )
     else:
         stickers_to_send = prepare_words(sticker_to_send[0])
-        for sticker in sticker_to_send:
-            sended_msg = context.bot.send_sticker(
+        for sticker in stickers_to_send:
+            context.bot.send_sticker(
                 chat_id=update.effective_chat.id,
                 sticker=sticker,
             )
@@ -365,10 +459,9 @@ def random_meme(update: Update, context: CallbackContext) -> None:
 
 def jojo_pose(update: Update, context: CallbackContext) -> None:
     """Send a random sticker"""
-    id = update.message.from_user["id"]
     sticker_to_send = random_pose(1)
     print(sticker_to_send)
-    sended_msg = context.bot.send_photo(chat_id=id, photo=sticker_to_send[0])
+    context.bot.send_photo(chat_id=id, photo=sticker_to_send[0])
 
 
 def into_words(q: str) -> [str]:
@@ -482,24 +575,24 @@ def inlinequery(update: Update, context: CallbackContext) -> None:
 def answer_webp(update: Update, context: CallbackContext) -> None:
     try:
         id = str(update.message.from_user["id"])
-    except:
+    except Exception as e:
         id = ""
     chat_id = str(update.message.chat.id)
     if (
-        len(update.message.photo) > 0
-        and id == str(232424901)
-        and chat_id == str(232424901)
+            len(update.message.photo) > 0
+            and id == str(232424901)
+            and chat_id == str(232424901)
     ):
         photo = update.message.photo[-1]
-        newFile = photo.get_file()
-        temp_file_path = newFile.file_path
-        extw = temp_file_path.split("/")
-        fname = extw[len(extw) - 1]
-        newFile.download(fname)
-        sticker_fname = image_converter.convert_image(fname, "jpg")
-        update.message.reply_sticker(open(sticker_fname, "rb"))
-        os.remove(fname)
-        os.remove(sticker_fname)
+        new_file = photo.get_file()
+        temp_file_path = new_file.file_path
+        ext = temp_file_path.split("/")
+        name = ext[len(ext) - 1]
+        new_file.download(name)
+        sticker_name = image_converter.convert_image(name, "jpg")
+        update.message.reply_sticker(open(sticker_name, "rb"))
+        os.remove(name)
+        os.remove(sticker_name)
 
 
 def error_handler(update: Update, context: CallbackContext) -> None:
@@ -551,6 +644,8 @@ def main():
     dispatcher.add_handler(CommandHandler("top", top_memes))
     dispatcher.add_handler(CommandHandler("random", random_meme))
     dispatcher.add_handler(CommandHandler("pose", jojo_pose))
+    dispatcher.add_handler(CommandHandler("ban", ban_handler))
+    dispatcher.add_handler(CommandHandler("unban", unban_handler))
 
     # add inlinequery
     dispatcher.add_handler(InlineQueryHandler(inlinequery))
@@ -558,7 +653,7 @@ def main():
     dispatcher.add_handler(MessageHandler(Filters.sticker, get_sticker_id))
     dispatcher.add_handler(MessageHandler(Filters.photo, answer_webp))
     dispatcher.add_handler(MessageHandler(Filters.text & ~Filters.command, echo))
-    dispatcher.add_handler(MessageHandler(Filters.status_update.new_chat_members,greet_new_chat_members))
+    dispatcher.add_handler(MessageHandler(Filters.status_update.new_chat_members, greet_new_chat_members))
     dispatcher.add_error_handler(error_handler)
 
     # Start the Bot
