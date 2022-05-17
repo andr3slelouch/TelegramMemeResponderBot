@@ -14,6 +14,7 @@ import logging
 from typing import Any
 import configuration
 import image_converter
+import video_converter
 import os
 
 from telegram import (
@@ -41,6 +42,8 @@ from uuid import uuid4
 from collections import OrderedDict
 import csv
 import re
+
+OUTPUT_STICKER_WEBM = "output_sticker.webm"
 
 JO_JO_POSES_XLSX = "/home/pi/Projects/memeBot/data/JoJo_Poses.xlsx"
 
@@ -93,8 +96,12 @@ def greet_new_chat_members(update: Update, context: CallbackContext):
     bot = Bot(token=configuration.get_bot_token(
         configuration.get_file_location("config.yaml")
     ))
-    bot.send_animation(update.effective_chat.id, "https://media.giphy.com/media/Vste8Y15c34zK/giphy.gif")
-    print("SENT GIF")
+    sent_msg = bot.send_animation(update.effective_chat.id, "https://media.giphy.com/media/Vste8Y15c34zK/giphy.gif")
+    context.job_queue.run_once(
+        callback_delete_message,
+        30,
+        context=(update.effective_chat.id, sent_msg.message_id),
+    )
 
 
 def echo(update: Update, context: CallbackContext) -> None:
@@ -118,10 +125,11 @@ def echo(update: Update, context: CallbackContext) -> None:
 
 
 def get_sticker_id(update: Update, context: CallbackContext) -> None:
-    """This function returns the id of the sticker and send it to the admin user"""
-    sticker_id = str(update.message.from_user["id"])
+    """This funtion returns the id of the sticker and send it to the admin user"""
+    sticker_id = update.message.sticker.file_id
+    id = str(update.message.from_user["id"])
     chat_id = str(update.message.chat.id)
-    if sticker_id and sticker_id == str(232424901) and chat_id == str(232424901):
+    if sticker_id and id == str(232424901) and chat_id == str(232424901):
         context.bot.send_message(chat_id=232424901, text=str(sticker_id))
 
 
@@ -302,7 +310,7 @@ def get_meme_sticker(meme: str) -> str:
         str: Returns the id of the sticker to be sended
     """
     try:
-        df = pd.read_excel(MEME_BOT_DB_XLSX )
+        df = pd.read_excel(MEME_BOT_DB_XLSX)
         for index, row in df.iterrows():
             list_words = prepare_words(row["Meme"])
             for sub_meme in list_words:
@@ -350,7 +358,7 @@ def get_meme_list() -> [str]:
         [str]: List of memes
     """
     try:
-        df = pd.read_excel(MEME_BOT_DB_XLSX )
+        df = pd.read_excel(MEME_BOT_DB_XLSX)
         shortened_df = df.tail(130)
         list_of_memes = shortened_df["Meme"].tolist()
         return list_of_memes
@@ -574,13 +582,13 @@ def inlinequery(update: Update, context: CallbackContext) -> None:
 
 def answer_webp(update: Update, context: CallbackContext) -> None:
     try:
-        id = str(update.message.from_user["id"])
+        user_id = str(update.message.from_user["id"])
     except Exception as e:
-        id = ""
+        user_id = ""
     chat_id = str(update.message.chat.id)
     if (
             len(update.message.photo) > 0
-            and id == str(232424901)
+            and user_id == str(232424901)
             and chat_id == str(232424901)
     ):
         photo = update.message.photo[-1]
@@ -593,6 +601,56 @@ def answer_webp(update: Update, context: CallbackContext) -> None:
         update.message.reply_sticker(open(sticker_name, "rb"))
         os.remove(name)
         os.remove(sticker_name)
+
+
+def answer_webm(update: Update, context: CallbackContext) -> None:
+    try:
+        user_id = str(update.message.from_user["id"])
+    except Exception as e:
+        user_id = ""
+    chat_id = str(update.message.chat.id)
+    if (
+            (update.message.video is not None or update.message.animation is not None)
+            and user_id == str(232424901)
+            and chat_id == str(232424901)
+    ):
+        context.bot.send_message(
+            chat_id=update.effective_chat.id,
+            text="Processing video...",
+        )
+        new_file = None
+        short_video = True
+        if update.message.video is not None:
+            new_file = update.message.video.get_file()
+            print(update.message.video.duration)
+            short_video = update.message.video.duration < 3
+            context.bot.send_message(
+                chat_id=update.effective_chat.id,
+                text="Duration:" + update.message.video.duration + "Flag:" + str(short_video),
+            )
+        elif update.message.animation is not None:
+            new_file = update.message.animation.get_file()
+            print(update.message.animation.duration)
+            short_video = update.message.animation.duration < 3
+            context.bot.send_message(
+                chat_id=update.effective_chat.id,
+                text="Duration:" + str(update.message.animation.duration) + "Flag:" + str(short_video),
+            )
+
+        if new_file is not None:
+            temp_file_path = new_file.file_path
+            ext = temp_file_path.split("/")
+            name = ext[len(ext) - 1]
+            new_file.download(name)
+            if video_converter.convert_video(name, not short_video) and os.path.exists(OUTPUT_STICKER_WEBM):
+                update.message.reply_video(open(OUTPUT_STICKER_WEBM, "rb"))
+                os.remove(name)
+                os.remove(OUTPUT_STICKER_WEBM)
+            else:
+                context.bot.send_message(
+                    chat_id=update.effective_chat.id,
+                    text="Something went wrong trying to convert video...",
+                )
 
 
 def error_handler(update: Update, context: CallbackContext) -> None:
@@ -652,6 +710,9 @@ def main():
     # on noncommand i.e message - echo the message on Telegram
     dispatcher.add_handler(MessageHandler(Filters.sticker, get_sticker_id))
     dispatcher.add_handler(MessageHandler(Filters.photo, answer_webp))
+    dispatcher.add_handler(MessageHandler(Filters.document.image, answer_webp))
+    dispatcher.add_handler(MessageHandler(Filters.video, answer_webm))
+    dispatcher.add_handler(MessageHandler(Filters.animation, answer_webm))
     dispatcher.add_handler(MessageHandler(Filters.text & ~Filters.command, echo))
     dispatcher.add_handler(MessageHandler(Filters.status_update.new_chat_members, greet_new_chat_members))
     dispatcher.add_error_handler(error_handler)

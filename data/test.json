@@ -1,0 +1,69 @@
+{
+  "update_id": 250646259,
+  "message": {
+    "message_id": 37707,
+    "date": 1650594162,
+    "chat": {
+      "id": 232424901,
+      "type": "private",
+      "username": "andr3slelouch",
+      "first_name": "Andres",
+      "last_name": "Andrade"
+    },
+    "reply_to_message": {
+      "message_id": 37704,
+      "date": 1650594116,
+      "chat": {
+        "id": 232424901,
+        "type": "private",
+        "username": "andr3slelouch",
+        "first_name": "Andres",
+        "last_name": "Andrade"
+      },
+      "text": "/ban Darths fd",
+      "entities": [
+        { "type": "bot_command", "offset": 0, "length": 4 },
+        {
+          "type": "text_mention",
+          "offset": 5,
+          "length": 6,
+          "user": { "id": 1488049595, "first_name": "Darths", "is_bot": False }
+        }
+      ],
+      "caption_entities": [],
+      "photo": [],
+      "new_chat_members": [],
+      "new_chat_photo": [],
+      "delete_chat_photo": False,
+      "group_chat_created": False,
+      "supergroup_chat_created": False,
+      "channel_chat_created": False,
+      "from": {
+        "id": 232424901,
+        "first_name": "Andres",
+        "is_bot": False,
+        "last_name": "Andrade",
+        "username": "andr3slelouch",
+        "language_code": "en"
+      }
+    },
+    "text": "/ban",
+    "entities": [{ "type": "bot_command", "offset": 0, "length": 4 }],
+    "caption_entities": [],
+    "photo": [],
+    "new_chat_members": [],
+    "new_chat_photo": [],
+    "delete_chat_photo": False,
+    "group_chat_created": False,
+    "supergroup_chat_created": False,
+    "channel_chat_created": False,
+    "from": {
+      "id": 232424901,
+      "first_name": "Andres",
+      "is_bot": False,
+      "last_name": "Andrade",
+      "username": "andr3slelouch",
+      "language_code": "en"
+    }
+  }
+}

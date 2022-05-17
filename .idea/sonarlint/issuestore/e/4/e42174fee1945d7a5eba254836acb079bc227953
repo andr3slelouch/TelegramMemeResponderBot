@@ -1,0 +1,18 @@
+
+Ipython:S5806‚"+Rename this variable; it shadows a builtin.(‰ï¬øÿÿÿÿ
+rpython:S3776«"TRefactor this function to reduce its Cognitive Complexity from 38 to the 15 allowed.(´¯ùÿÿÿÿ
+Npython:S6035¹"0Replace this alternation with a character class.(µï›òùÿÿÿÿ
+rpython:S3776À"TRefactor this function to reduce its Cognitive Complexity from 61 to the 15 allowed.(Ë¿óşÿÿÿÿ
+Npython:S6035Ñ"0Replace this alternation with a character class.(µï›òùÿÿÿÿ
+xpython:S5886Ã"_Return a value of type "str" instead of "bool" or update function "get_meme_sticker" type hint.(ºÅ³Ù
+Cpython:S1481Â"%Remove the unused local variable "e".(¼–¯¸ÿÿÿÿÿ
+Cpython:S1481Ğ"%Remove the unused local variable "e".(¼–¯¸ÿÿÿÿÿ
+Cpython:S1481Ş"%Remove the unused local variable "e".(¼–¯¸ÿÿÿÿÿ
+Cpython:S1481í"%Remove the unused local variable "e".(¼–¯¸ÿÿÿÿÿ
+{python:S5886ü"bReturn a value of type "dict" instead of "bool" or update function "get_meme_list_dict" type hint.(ºÅ³Ù
+Cpython:S1481û"%Remove the unused local variable "e".(¼–¯¸ÿÿÿÿÿ
+}python:S5886"dReturn a value of type "str" instead of "bool" or update function "get_meme_list_summary" type hint.(ºÅ³Ù
+hpython:S1854Ÿ"JRemove this assignment to local variable 'query'; the value is never used.( —±Æşÿÿÿÿ
+Hpython:S1481¨"*Remove the unused local variable "offset".(×–¤åüÿÿÿÿ
+Cpython:S1481Ê"%Remove the unused local variable "e".(¼–¯¸ÿÿÿÿÿ
+Cpython:S1481á"%Remove the unused local variable "e".(¼–¯¸ÿÿÿÿÿ
