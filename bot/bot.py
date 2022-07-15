@@ -110,18 +110,33 @@ def answer_meme(update: Update, context: CallbackContext) -> None:
         if update.message.date > START_BOT_DATETIME:
             meme = get_meme_sticker(string_normalizer(update.message.text))
             if meme and type(meme) is not list:
-                update.message.reply_sticker(meme)
+                answer_solo_sticker(meme, update)
             elif type(meme) is list:
-                for sticker in meme:
-                    update.message.reply_sticker(sticker)
-            elif (
-                    string_normalizer(update.message.text) == "pinche bot"
-                    or string_normalizer(update.message.text) == "bot culiao"
-                    or string_normalizer(update.message.text) == "bot cdlbv"
-                    or string_normalizer(update.message.text) == "bot conchatumadre"
-                    or string_normalizer(update.message.text) == "bot crvrg"
-            ):
-                random_meme(update, context)
+                answer_multiple_stickers(meme, update)
+            else:
+                answer_to_insult(update,context)
+
+
+def answer_solo_sticker(meme, update):
+    if hasattr(update.message, "reply_to_message"):
+        update.message.reply_to_message.reply_sticker(meme)
+    else:
+        update.message.reply_sticker(meme)
+
+
+def answer_to_insult(update,context):
+    if (
+            string_normalizer(update.message.text) == "pinche bot"
+            or string_normalizer(update.message.text) == "bot culiao"
+            or string_normalizer(update.message.text) == "bot cdlbv"
+            or string_normalizer(update.message.text) == "bot conchatumadre"
+            or string_normalizer(update.message.text) == "bot crvrg"
+    ):
+        random_meme(update, context)
+
+def answer_multiple_stickers(meme, update):
+    for sticker in meme:
+        update.message.reply_sticker(sticker)
 
 
 def get_sticker_id(update: Update, context: CallbackContext) -> None:
