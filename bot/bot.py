@@ -11,6 +11,9 @@ in https://github.com/python-telegram-bot/python-telegram-bot/blob/master/exampl
 """
 
 import logging
+
+import telegram
+
 import configuration
 import image_converter
 import video_converter
@@ -30,7 +33,7 @@ from telegram.ext import (
     CallbackContext,
     InlineQueryHandler,
 )
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from unicodedata import normalize
 import pandas as pd
 import traceback
@@ -111,16 +114,26 @@ def answer_meme(update: Update, context: CallbackContext) -> None:
             if meme and type(meme) is not list:
                 answer_solo_sticker(meme, update)
             elif type(meme) is list:
-                answer_to_list_stickers(meme, update)
+                answer_to_list_stickers(meme, update, context)
             else:
                 answer_to_insult(update, context)
 
 
-def answer_solo_sticker(meme, update):
+def answer_solo_sticker(meme: str, update: telegram.Update):
+    message = get_message_from_update(update)
+    if message is not None:
+        if "video" in meme:
+            video_path = configuration.get_video_location(meme.split(":")[1])
+            message.reply_video(open(video_path, "rb"))
+        else:
+            message.reply_sticker(meme)
+
+
+def get_message_from_update(update: telegram.Update) -> telegram.Message:
     if update.message.reply_to_message is not None:
-        update.message.reply_to_message.reply_sticker(meme)
+        return update.message.reply_to_message
     else:
-        update.message.reply_sticker(meme)
+        return update.message
 
 
 def answer_to_insult(update, context):
@@ -134,14 +147,35 @@ def answer_to_insult(update, context):
         random_meme(update, context)
 
 
-def answer_to_list_stickers(meme, update):
+def answer_to_list_stickers(meme: [str], update: Update, context: CallbackContext):
+    message = get_message_from_update(update)
     if "video" in meme[0]:
         video_path = configuration.get_video_location(meme[0].split(":")[1])
-        print(video_path)
-        update.message.reply_video(open(video_path, "rb"))
+        message.reply_video(open(video_path, "rb"))
+        if meme[1] is not None and "time" in meme[1]:
+            seconds_to_add = int(meme[1].split(":")[1]) * 60
+            context.job_queue.run_once(
+                callback_video_message,
+                seconds_to_add,
+                context=(
+                    message.chat.id,
+                    video_path,
+                    message.message_id
+                ),
+            )
     else:
         for sticker in meme:
             update.message.reply_sticker(sticker)
+
+
+def callback_video_message(context: CallbackContext):
+    (chat_id, video_path, message_id) = context.job.context
+    try:
+        context.bot.send_video(
+            chat_id=chat_id, video=open(video_path, "rb"), reply_to_message_id=message_id
+        )
+    except Exception as e:
+        logger.warning("cannot reply message {}: {}".format(message_id, e))
 
 
 def get_sticker_id(update: Update, context: CallbackContext) -> None:
@@ -160,6 +194,16 @@ def get_id(update: Update, context: CallbackContext) -> None:
         chat_id=update.effective_chat.id,
         text=str(user_id),
     )
+
+
+def get_jobs(update: Update, context: CallbackContext) -> None:
+    """This function is made to kno how much jobs are currently executing"""
+    username = update.message.from_user["id"]
+    if username == 232424901:
+        context.bot.send_message(
+            chat_id=232424901,
+            text="Number of jobs " + str(len(context.job_queue.jobs())),
+        )
 
 
 # Taken from https://github.com/Koppal-Shree/telegram_gcloner/blob/4eda6ed55fbabae47c59aa81decdb15dc1f211bb
@@ -472,17 +516,29 @@ def random_meme(update: Update, context: CallbackContext) -> None:
     """Send a random sticker"""
     sticker_to_send = random_stickers(1)
     if "|" not in sticker_to_send[0]:
-        context.bot.send_sticker(
-            chat_id=update.effective_chat.id,
-            sticker=sticker_to_send[0],
-        )
+        if "video" in sticker_to_send[0]:
+            context.bot.send_video(
+                chat_id=update.effective_chat.id,
+                video=open(configuration.get_video_location(sticker_to_send[0].split(":")[1]), "rb")
+            )
+        else:
+            context.bot.send_sticker(
+                chat_id=update.effective_chat.id,
+                sticker=sticker_to_send[0],
+            )
     else:
         stickers_to_send = prepare_words(sticker_to_send[0])
         for sticker in stickers_to_send:
-            context.bot.send_sticker(
-                chat_id=update.effective_chat.id,
-                sticker=sticker,
-            )
+            if "video" in sticker:
+                context.bot.send_video(
+                    chat_id=update.effective_chat.id,
+                    video=open(configuration.get_video_location(sticker.split(":")[1]), "rb")
+                )
+            if "time" not in sticker:
+                context.bot.send_sticker(
+                    chat_id=update.effective_chat.id,
+                    sticker=sticker,
+                )
 
 
 def jojo_pose(update: Update, context: CallbackContext) -> None:
@@ -722,6 +778,7 @@ def main():
     dispatcher.add_handler(CommandHandler("pose", jojo_pose))
     dispatcher.add_handler(CommandHandler("ban", ban_handler))
     dispatcher.add_handler(CommandHandler("unban", unban_handler))
+    dispatcher.add_handler(CommandHandler("jobs", get_jobs))
 
     # add inlinequery
     dispatcher.add_handler(InlineQueryHandler(inline_query))
