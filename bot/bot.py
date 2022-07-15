@@ -11,7 +11,7 @@ in https://github.com/python-telegram-bot/python-telegram-bot/blob/master/exampl
 """
 
 import logging
-from typing import Any
+from types import NoneType
 import configuration
 import image_converter
 import video_converter
@@ -83,7 +83,7 @@ def prepare_words(string) -> list:
     """This function prepare a string that has | in his content and split in a list
 
     Args:
-        string (str): Wort to be splitted
+        string: Wort to be splitted
 
     Returns:
         list: A list that contains the string splitted in a list
@@ -104,7 +104,7 @@ def greet_new_chat_members(update: Update, context: CallbackContext):
     )
 
 
-def echo(update: Update, context: CallbackContext) -> None:
+def answer_meme(update: Update, context: CallbackContext) -> None:
     """Echo the user message."""
     if hasattr(update.message, "date"):
         if update.message.date > START_BOT_DATETIME:
@@ -127,9 +127,9 @@ def echo(update: Update, context: CallbackContext) -> None:
 def get_sticker_id(update: Update, context: CallbackContext) -> None:
     """This funtion returns the id of the sticker and send it to the admin user"""
     sticker_id = update.message.sticker.file_id
-    id = str(update.message.from_user["id"])
+    user_id = str(update.message.from_user["id"])
     chat_id = str(update.message.chat.id)
-    if sticker_id and id == str(232424901) and chat_id == str(232424901):
+    if sticker_id and user_id == str(232424901) and chat_id == str(232424901):
         context.bot.send_message(chat_id=232424901, text=str(sticker_id))
 
 
@@ -242,7 +242,7 @@ def add_banned_users_csv(group_id: str, user_id: str) -> None:
     user_to_add = {"group": group_id, "user": user_id}
     for (group, user) in zip(banned_users[0], banned_users[1]):
         list_banned_users.append({"group": group, "user": user})
-    if not user_to_add in list_banned_users:
+    if user_to_add not in list_banned_users:
         keys = list_banned_users[0].keys()
         with open('/home/pi/Projects/memeBot/data/banned_users.csv', 'w', newline='') as output_file:
             dict_writer = csv.DictWriter(output_file, keys)
@@ -315,12 +315,12 @@ def get_meme_sticker(meme: str) -> str:
             list_words = prepare_words(row["Meme"])
             for sub_meme in list_words:
                 if meme == sub_meme:
-                    if not "|" in row["StickerID"]:
+                    if "|" not in row["StickerID"]:
                         return row["StickerID"]
                     else:
                         return prepare_words(row["StickerID"])
-    except Exception as e:
-        return False
+    except Exception:
+        return ""
 
 
 def get_sticker_list() -> [str]:
@@ -333,7 +333,7 @@ def get_sticker_list() -> [str]:
         df = pd.read_excel(MEME_BOT_DB_XLSX)
         list_of_memes = df["StickerID"].tolist()
         return list_of_memes
-    except Exception as e:
+    except Exception:
         return False
 
 
@@ -347,7 +347,7 @@ def get_jojo_pose_list() -> [str]:
         df = pd.read_excel(JO_JO_POSES_XLSX)
         list_of_memes = df["URL"].tolist()
         return list_of_memes
-    except Exception as e:
+    except Exception:
         return False
 
 
@@ -362,7 +362,7 @@ def get_meme_list() -> [str]:
         shortened_df = df.tail(130)
         list_of_memes = shortened_df["Meme"].tolist()
         return list_of_memes
-    except Exception as e:
+    except Exception:
         return False
 
 
@@ -376,8 +376,8 @@ def get_meme_list_dict() -> dict:
         for sticker, meme in zip(list_of_stickers, list_of_memes):
             stickers_dict.update({sticker: [meme]})
         return stickers_dict
-    except Exception as e:
-        return False
+    except Exception:
+        return {}
 
 
 def get_meme_list_summary(elements_from_last: int) -> str:
@@ -411,7 +411,7 @@ def get_meme_list_summary(elements_from_last: int) -> str:
             summary += str(counter) + ". " + str(meme) + "\n"
         return summary
     else:
-        return False
+        return ""
 
 
 def random_stickers(n: int) -> [str]:
@@ -428,8 +428,8 @@ def random_stickers(n: int) -> [str]:
     for meme in ids:
         if "|" in meme:
             ids.remove(meme)
-            for substicker in meme.split("|"):
-                ids.append(substicker.strip())
+            for sub_sticker in meme.split("|"):
+                ids.append(sub_sticker.strip())
     return list(OrderedDict.fromkeys(ids[:n]))
 
 
@@ -451,7 +451,7 @@ def random_pose(n: int) -> [str]:
 def random_meme(update: Update, context: CallbackContext) -> None:
     """Send a random sticker"""
     sticker_to_send = random_stickers(1)
-    if not "|" in sticker_to_send[0]:
+    if "|" not in sticker_to_send[0]:
         context.bot.send_sticker(
             chat_id=update.effective_chat.id,
             sticker=sticker_to_send[0],
@@ -538,41 +538,39 @@ def search_stickers(query: str) -> [str]:
     return list(OrderedDict.fromkeys(stickers))
 
 
-def inlinequery(update: Update, context: CallbackContext) -> None:
+def inline_query(update: Update, context: CallbackContext) -> None:
     """Handle the inline query."""
-    query = update.inline_query.query
 
     results = []
 
     # This constant is defined by the Bot API.
-    MAX_RESULTS = 50
+    max_results = 50
 
-    inline_query = update.inline_query
+    inline_query_str = update.inline_query
     query = update.inline_query.query
-    offset = update.inline_query.offset
 
-    if not inline_query:
+    if not inline_query_str:
         return
 
     # If query is empty - return random stickers.
-    return_random = not inline_query.query
+    return_random = not inline_query_str.query
 
     if return_random:
-        stickers = random_stickers(MAX_RESULTS)
+        stickers = random_stickers(max_results)
     elif query == "":
-        stickers = random_stickers(MAX_RESULTS)
+        stickers = random_stickers(max_results)
     else:
-        stickers = search_stickers(inline_query.query)
+        stickers = search_stickers(inline_query_str.query)
 
     stickers = list(dict.fromkeys(stickers))
 
-    if len(stickers) > MAX_RESULTS:
-        stickers = stickers[:MAX_RESULTS]
+    if len(stickers) > max_results:
+        stickers = stickers[:max_results]
 
     for sticker_file_id in stickers:
         results.append(
             InlineQueryResultCachedSticker(
-                id=uuid4(),
+                id=str(uuid4()),
                 sticker_file_id=sticker_file_id,
             ),
         )
@@ -583,10 +581,11 @@ def inlinequery(update: Update, context: CallbackContext) -> None:
 def answer_webp(update: Update, context: CallbackContext) -> None:
     try:
         user_id = str(update.message.from_user["id"])
-    except Exception as e:
+    except Exception:
         user_id = ""
     chat_id = str(update.message.chat.id)
     if (
+            update.message.photo != NoneType and
             len(update.message.photo) > 0
             and user_id == str(232424901)
             and chat_id == str(232424901)
@@ -606,7 +605,7 @@ def answer_webp(update: Update, context: CallbackContext) -> None:
 def answer_webm(update: Update, context: CallbackContext) -> None:
     try:
         user_id = str(update.message.from_user["id"])
-    except Exception as e:
+    except Exception:
         user_id = ""
     chat_id = str(update.message.chat.id)
     if (
@@ -696,7 +695,6 @@ def main():
 
     # on different commands - answer in Telegram
     dispatcher.add_handler(CommandHandler("start", start))
-    # dispatcher.add_handler(CommandHandler("id", id))
     dispatcher.add_handler(CommandHandler("help", help_command))
     dispatcher.add_handler(CommandHandler("list", list_memes))
     dispatcher.add_handler(CommandHandler("top", top_memes))
@@ -706,14 +704,14 @@ def main():
     dispatcher.add_handler(CommandHandler("unban", unban_handler))
 
     # add inlinequery
-    dispatcher.add_handler(InlineQueryHandler(inlinequery))
+    dispatcher.add_handler(InlineQueryHandler(inline_query))
     # on noncommand i.e message - echo the message on Telegram
     dispatcher.add_handler(MessageHandler(Filters.sticker, get_sticker_id))
     dispatcher.add_handler(MessageHandler(Filters.photo, answer_webp))
     dispatcher.add_handler(MessageHandler(Filters.document.image, answer_webp))
     dispatcher.add_handler(MessageHandler(Filters.video, answer_webm))
     dispatcher.add_handler(MessageHandler(Filters.animation, answer_webm))
-    dispatcher.add_handler(MessageHandler(Filters.text & ~Filters.command, echo))
+    dispatcher.add_handler(MessageHandler(Filters.text & ~Filters.command, answer_meme))
     dispatcher.add_handler(MessageHandler(Filters.status_update.new_chat_members, greet_new_chat_members))
     dispatcher.add_error_handler(error_handler)
 
