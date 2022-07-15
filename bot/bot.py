@@ -11,7 +11,6 @@ in https://github.com/python-telegram-bot/python-telegram-bot/blob/master/exampl
 """
 
 import logging
-from types import NoneType
 import configuration
 import image_converter
 import video_converter
@@ -118,7 +117,7 @@ def answer_meme(update: Update, context: CallbackContext) -> None:
 
 
 def answer_solo_sticker(meme, update):
-    if hasattr(update.message, "reply_to_message"):
+    if update.message.reply_to_message is not None:
         update.message.reply_to_message.reply_sticker(meme)
     else:
         update.message.reply_sticker(meme)
@@ -600,7 +599,7 @@ def answer_webp(update: Update, context: CallbackContext) -> None:
         user_id = ""
     chat_id = str(update.message.chat.id)
     if (
-            update.message.photo != NoneType and
+            update.message.photo is not None and
             len(update.message.photo) > 0
             and user_id == str(232424901)
             and chat_id == str(232424901)
