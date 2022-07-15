@@ -34,6 +34,13 @@ def get_file_location(filename: str) -> str:
     return full_path_file_location
 
 
+def get_video_location(filename: str) -> str:
+    working_directory = get_working_directory()
+    working_directory = os.path.join(working_directory, "videos")
+    full_path_file_location = os.path.join(working_directory, filename)
+    return full_path_file_location
+
+
 logging.basicConfig(
     filename=get_file_location("Running.log"),
     level=logging.INFO,

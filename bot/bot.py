@@ -111,9 +111,9 @@ def answer_meme(update: Update, context: CallbackContext) -> None:
             if meme and type(meme) is not list:
                 answer_solo_sticker(meme, update)
             elif type(meme) is list:
-                answer_multiple_stickers(meme, update)
+                answer_to_list_stickers(meme, update)
             else:
-                answer_to_insult(update,context)
+                answer_to_insult(update, context)
 
 
 def answer_solo_sticker(meme, update):
@@ -123,7 +123,7 @@ def answer_solo_sticker(meme, update):
         update.message.reply_sticker(meme)
 
 
-def answer_to_insult(update,context):
+def answer_to_insult(update, context):
     if (
             string_normalizer(update.message.text) == "pinche bot"
             or string_normalizer(update.message.text) == "bot culiao"
@@ -133,9 +133,15 @@ def answer_to_insult(update,context):
     ):
         random_meme(update, context)
 
-def answer_multiple_stickers(meme, update):
-    for sticker in meme:
-        update.message.reply_sticker(sticker)
+
+def answer_to_list_stickers(meme, update):
+    if "video" in meme[0]:
+        video_path = configuration.get_video_location(meme[0].split(":")[1])
+        print(video_path)
+        update.message.reply_video(open(video_path, "rb"))
+    else:
+        for sticker in meme:
+            update.message.reply_sticker(sticker)
 
 
 def get_sticker_id(update: Update, context: CallbackContext) -> None:
