@@ -438,7 +438,8 @@ def get_meme_list_dict() -> dict:
         list_of_stickers = df["StickerID"].tolist()
         stickers_dict = {}
         for sticker, meme in zip(list_of_stickers, list_of_memes):
-            stickers_dict.update({sticker: [meme]})
+            if "video" not in sticker:
+                stickers_dict.update({sticker: [meme]})
         return stickers_dict
     except Exception:
         return {}
