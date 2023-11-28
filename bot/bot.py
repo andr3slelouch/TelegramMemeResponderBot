@@ -14,9 +14,8 @@ import logging
 
 import telegram
 
-import configuration
-import image_converter
-import video_converter
+from config import configuration
+from utils import image_converter, video_converter
 import os
 
 from telegram import (
@@ -33,7 +32,7 @@ from telegram.ext import (
     CallbackContext,
     InlineQueryHandler,
 )
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timezone
 from unicodedata import normalize
 import pandas as pd
 import traceback

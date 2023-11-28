@@ -1,0 +1,5 @@
+meme_managing:
+  meme_database: "../data/meme_bot_db.xlsx"
+
+telegram_api:
+  api_key: ""
