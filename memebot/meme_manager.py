@@ -5,7 +5,7 @@ from typing import Any
 import pandas as pd
 
 from config.config import load_config
-from utils.utils import prepare_words
+from utils.utils import prepare_words, into_words, word_in_words
 
 
 class MemeManager:
@@ -42,6 +42,46 @@ class MemeManager:
         """
         ids = [sub_sticker.strip() for meme in ids if "|" in meme for sub_sticker in meme.split("|")]
         return list(OrderedDict.fromkeys(ids[:n]))
+
+    def search_stickers(self,query: str) -> [str]:
+        """This function finds a meme andreturns his repective stickers
+
+        Args:
+            query (str): Meme to be found
+
+        Returns:
+            [str]: List of stickers ids to be used in inlinequery
+        """
+        query_words = into_words(query)
+        dict_stickers = self.get_meme_list_dict()
+
+        stickers = []
+        for file_id, texts in dict_stickers.items():
+            texts_string = " ".join(texts).lower()
+            texts_words = into_words(texts_string)
+            if "*" in texts:
+                continue
+            if all([word_in_words(w, texts_words) for w in query_words]):
+                if "|" in file_id:
+                    for sticker in prepare_words(file_id):
+                        stickers.append(sticker)
+                else:
+                    stickers.append(file_id)
+
+        return list(OrderedDict.fromkeys(stickers))
+
+    def get_meme_list_dict(self) -> dict:
+        """Makes a dict with all the memes and stickers."""
+        try:
+            list_of_memes = self.meme_database_df["Meme"].tolist()
+            list_of_stickers = self.meme_database_df["StickerID"].tolist()
+            stickers_dict = {}
+            for sticker, meme in zip(list_of_stickers, list_of_memes):
+                if "video" not in sticker:
+                    stickers_dict.update({sticker: [meme]})
+            return stickers_dict
+        except Exception:
+            return {}
 
     def get_sticker_list(self) -> [str]:
         """Makes a list from all thestickers in excel

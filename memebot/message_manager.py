@@ -23,6 +23,11 @@ class MessageManager:
         else:
             await self._answer_to_insult(update, context)
 
+    async def verify_all_meme(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+        for index, row in self.meme.meme_database_df.iterrows():
+            await update.message.reply_text(f"Testing {row['Meme']}")
+            await self._send_sticker_or_video(row['StickerID'], update, context)
+
     async def _answer_to_insult(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         normalized_text = string_normalizer(update.message.text)
         insults = [

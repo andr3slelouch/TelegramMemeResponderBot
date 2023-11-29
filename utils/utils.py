@@ -52,3 +52,41 @@ def process_video_parameters_to_dict(video_parameters_list: [str]) -> dict:
         video_parameter_list = video_parameter.split(":")
         video_parameters_dict[video_parameter_list[0]] = video_parameter_list[1]
     return video_parameters_dict
+
+
+def into_words(q: str) -> [str]:
+    """This function split a string to his characters
+
+    Args:
+        q (str): String to be splitted
+
+    Returns:
+        [str]: List of characters
+    """
+    # Remove all syntax symbols
+    syntax_marks = ",.!?-"
+    for sym in syntax_marks:
+        q = q.replace(sym, " ")
+
+    # Split into words
+    words = q.lower().strip().split()
+    words = [w.strip() for w in words]
+    words = [w for w in words if w]
+
+    return words
+
+
+def word_in_words(word: str, words: [str]) -> bool:
+    """Returns if a word exists inside the list of words
+
+    Args:
+        word (str): Word to be finded
+        words ([str]): List of words
+
+    Returns:
+        bool: Returns True if the word is found else False
+    """
+    for w in words:
+        if w.startswith(word):
+            return True
+    return False

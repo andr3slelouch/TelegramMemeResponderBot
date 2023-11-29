@@ -18,9 +18,11 @@ bot.
 import logging
 
 from telegram import ForceReply, Update
-from telegram.ext import Application, CommandHandler, ContextTypes, MessageHandler, filters
+from telegram.ext import Application, CommandHandler, ContextTypes, MessageHandler, filters, CallbackQueryHandler, \
+    InlineQueryHandler
 
 from config.config import load_config
+from inline_keyboard_manager import InlineKeyboardManager
 from message_manager import MessageManager
 
 message_man = MessageManager()
@@ -51,6 +53,11 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
     await update.message.reply_text("Help!")
 
 
+async def verify_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Send a message when the command /help is issued."""
+    await message_man.verify_all_meme(update, context)
+
+
 async def answer_meme(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Method to answer a meme"""
     await message_man.answer_meme(update, context)
@@ -63,10 +70,13 @@ def main() -> None:
     api_key = config_data.get("telegram_api", {}).get("api_key", "")
     application = Application.builder().token(api_key).build()
 
+    inline_query = InlineKeyboardManager()
+
     # on different commands - answer in Telegram
     application.add_handler(CommandHandler("start", start))
     application.add_handler(CommandHandler("help", help_command))
-    application.add_handler(CommandHandler("verify", ))
+    application.add_handler(CommandHandler("verify", verify_command))
+    application.add_handler(InlineQueryHandler(inline_query.inline_query))
 
     # on non command i.e message - echo the message on Telegram
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, answer_meme))
