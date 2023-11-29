@@ -18,14 +18,7 @@ bot.
 import logging
 
 from telegram import ForceReply, Update
-from telegram.ext import Application, CommandHandler, ContextTypes, MessageHandler, filters, CallbackQueryHandler, \
-    InlineQueryHandler
-
-from config.config import load_config
-from memebot.inline_keyboard_manager import InlineKeyboardManager
-from memebot.message_manager import MessageManager
-
-message_man = MessageManager()
+from telegram.ext import Application, CommandHandler, ContextTypes, MessageHandler, filters
 
 # Enable logging
 logging.basicConfig(
@@ -53,41 +46,19 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
     await update.message.reply_text("Help!")
 
 
-async def verify_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    """Send a message when the command /help is issued."""
-    await message_man.verify_all_meme(update, context)
-
-
-async def list_memes_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    """Send a message when the command /help is issued."""
-    await message_man.list_memes(update, context)
-
-async def random_meme_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    """Send a message when the command /help is issued."""
-    await message_man.random_meme(update, context)
-
-
 async def answer_meme(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    """Method to answer a meme"""
-    await message_man.answer_meme(update, context)
+    """Echo the user message."""
+    await update.message.reply_text(update.message.text)
 
 
 def main() -> None:
     """Start the bot."""
     # Create the Application and pass it your bot's token.
-    config_data = load_config()
-    api_key = config_data.get("telegram_api", {}).get("api_key", "")
-    application = Application.builder().token(api_key).build()
-
-    inline_query = InlineKeyboardManager()
+    application = Application.builder().token("1515669604:AAESJQivv9M5o3VfUKX4u2BonJ8W-BjQ0M4").build()
 
     # on different commands - answer in Telegram
     application.add_handler(CommandHandler("start", start))
     application.add_handler(CommandHandler("help", help_command))
-    application.add_handler(CommandHandler("verify", verify_command))
-    application.add_handler(CommandHandler("list", list_memes_command))
-    application.add_handler(CommandHandler("random", random_meme_command))
-    application.add_handler(InlineQueryHandler(inline_query.inline_query))
 
     # on non command i.e message - echo the message on Telegram
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, answer_meme))

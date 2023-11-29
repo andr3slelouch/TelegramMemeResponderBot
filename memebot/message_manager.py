@@ -2,7 +2,7 @@ import logging
 from telegram import Update, Message
 from telegram.ext import ContextTypes, CallbackContext
 
-from meme_manager import MemeManager
+from memebot.meme_manager import MemeManager
 from config import config
 from config.config import get_video_location
 from utils.utils import string_normalizer, prepare_words, process_video_parameters_to_dict

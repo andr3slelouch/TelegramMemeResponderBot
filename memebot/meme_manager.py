@@ -1,10 +1,11 @@
 import random
+import os
 from collections import OrderedDict
 from typing import Any
 
 import pandas as pd
 
-from config.config import load_config
+from config.config import load_config, get_working_directory
 from utils.utils import prepare_words, into_words, word_in_words
 
 
@@ -18,7 +19,7 @@ class MemeManager:
     def load_dataframe(self) -> None:
         if self.meme_database_df is None:
             config_data = load_config()
-            meme_database_path = config_data.get("meme_managing", {}).get("meme_database", "")
+            meme_database_path = os.path.join(get_working_directory(),config_data.get("meme_managing", {}).get("meme_database", ""))
             self.meme_database_df = pd.read_excel(meme_database_path)
 
     def random_stickers(self,n: int) -> [str]:

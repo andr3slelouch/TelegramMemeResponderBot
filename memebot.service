@@ -1,0 +1,13 @@
+[Unit]
+Description=Autostart memebot
+After=multi-user.target
+
+[Service]
+WorkingDirectory=/home/andres/Downloads/GitClones/TelegramMemeResponderBot
+ExecStart=/home/andres/Downloads/GitClones/TelegramMemeResponderBot/venv/bin/python /home/andres/Downloads/GitClones/TelegramMemeResponderBot/run_bot.py
+Type=simple
+User=andres
+Group=andres
+
+[Install]
+WantedBy=multi-user.target

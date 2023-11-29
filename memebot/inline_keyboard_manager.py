@@ -4,7 +4,7 @@ from uuid import uuid4
 from telegram import Update, InlineQueryResultCachedSticker
 from telegram.ext import ContextTypes
 
-from meme_manager import MemeManager
+from memebot.meme_manager import MemeManager
 
 logger = logging.getLogger(__name__)
 
