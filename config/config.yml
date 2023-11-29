@@ -3,4 +3,4 @@ meme_managing:
   meme_video_path: "../data/video/"
 
 telegram_api:
-  api_key: "1515669604:AAESJQivv9M5o3VfUKX4u2BonJ8W-BjQ0M4"
+  api_key: ""

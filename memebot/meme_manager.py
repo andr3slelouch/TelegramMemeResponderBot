@@ -94,6 +94,43 @@ class MemeManager:
         except pd.errors.EmptyDataError:
             return []
 
+    def get_meme_list(self) -> [str]:
+        """Makes a list from all the memes in Excel
+
+        Returns:
+            [str]: List of memes
+        """
+        try:
+            list_of_memes = self.meme_database_df["Meme"].tolist()
+            return list_of_memes
+        except Exception:
+            return False
+
+    def get_meme_list_summary(self) -> [str]:
+        """Prepares the lists of the last memes to be sended as string
+
+        Args:
+            elements_from_last (int): How much elements are required
+
+        Returns:
+            str: The summary of memes
+        """
+        list_of_memes = self.get_meme_list()
+        counter = 0
+        summary = ""
+        list_of_sublists = [list_of_memes[i:i + 50] for i in range(0, len(list_of_memes), 50)]
+        list_of_summaries = []
+        if list_of_memes:
+            for sub_list in list_of_sublists:
+                summary = ""
+                for meme in sub_list:
+                    counter += 1
+                    summary += str(counter) + ". " + str(meme) + "\n"
+                list_of_summaries.append(summary)
+            return list_of_summaries
+        else:
+            return []
+
     def get_meme_sticker(self, meme_trigger: str) -> list | Any:
         """
         Find the sticker in excel and return its id
