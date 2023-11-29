@@ -11,10 +11,18 @@ def load_config():
 
 
 def get_video_location(filename: str) -> str:
-    working_directory = get_working_directory()
-    working_directory = os.path.join(working_directory, "videos")
-    full_path_file_location = os.path.join(working_directory, filename)
-    return full_path_file_location
+    """
+    This method generates a video full path
+    :param filename: Filename to generate a path
+    :return: string with the full path
+    """
+    config_data = load_config()
+    parent_path = config_data.get("meme_managing", {}).get("meme_video_path", "")
+    if parent_path:
+        full_path_file_location = os.path.join(parent_path, filename)
+        return full_path_file_location
+    else:
+        raise FileNotFoundError
 
 
 def get_working_directory() -> str:

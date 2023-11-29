@@ -44,3 +44,11 @@ def string_normalizer(phrase: str) -> str:
     phrase = phrase.replace(",", "")
     phrase = phrase.lower()
     return phrase
+
+
+def process_video_parameters_to_dict(video_parameters_list: [str]) -> dict:
+    video_parameters_dict = {}
+    for video_parameter in video_parameters_list:
+        video_parameter_list = video_parameter.split(":")
+        video_parameters_dict[video_parameter_list[0]] = video_parameter_list[1]
+    return video_parameters_dict

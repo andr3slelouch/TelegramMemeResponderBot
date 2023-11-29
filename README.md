@@ -29,7 +29,7 @@ TODO
 ## TODO
 
 - [ ] **REFACTORIZE FOR TO ONELINE FOR**
-- [ ] **Finalize implementation**
+- [X] **Finalize sending and scheduling videos implementation(Carteles de tiempo de bob sponja =D )**
 - [ ] **Implement answering/sending messages to topics**
 - [ ] **Implement specifying allowed topic to answer**
 - [ ] **Add Installation process guide**
