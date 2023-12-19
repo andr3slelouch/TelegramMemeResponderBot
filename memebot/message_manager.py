@@ -6,6 +6,7 @@ from memebot.meme_manager import MemeManager
 from config import config
 from config.config import get_video_location
 from utils.utils import string_normalizer, prepare_words, process_video_parameters_to_dict
+from memebot.llm_chat_manager import LlmChatManager
 
 logger = logging.getLogger(__name__)
 
@@ -45,12 +46,20 @@ class MessageManager:
 
     async def _answer_to_insult(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         normalized_text = string_normalizer(update.message.text)
+
+        """
         insults = [
             "pinche bot", "bot culiao", "bot cdlbv",
             "bot conchatumadre", "bot crvrg"
         ]
         if normalized_text in insults:
             await self.random_meme(update, context)
+        """
+        if "bot" in normalized_text:
+            llcm = LlmChatManager()
+            message_to_reply = llcm.answer(normalized_text)
+            await update.message.reply_text(message_to_reply)
+
 
     async def random_meme(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         """

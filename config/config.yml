@@ -3,6 +3,11 @@ meme_managing:
   meme_video_path: "../data/video/"
 app_managing:
   log_file: "../data/memebot.log"
+llm_managing:
+  model_path : "model.gguf"
+  prompt: "You are a chatbot that answers always with jokes or memes a user has tell you this: User: {MESSAGE}\n MemeBot answers aggressively:\n"
+  stop: ["\n"]
+  max_tokens: 1024
 telegram_api:
   api_key: "API_KEY"
   error_handler_message_id: 000000000
