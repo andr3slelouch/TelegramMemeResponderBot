@@ -15,9 +15,13 @@ Press Ctrl-C on the command line or send a signal to the process to stop the
 bot.
 """
 
+import html
+import json
 import logging
+import traceback
 
 from telegram import ForceReply, Update
+from telegram.constants import ParseMode
 from telegram.ext import Application, CommandHandler, ContextTypes, MessageHandler, filters, CallbackQueryHandler, \
     InlineQueryHandler
 
@@ -62,6 +66,7 @@ async def list_memes_command(update: Update, context: ContextTypes.DEFAULT_TYPE)
     """Send a message when the command /help is issued."""
     await message_man.list_memes(update, context)
 
+
 async def random_meme_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Send a message when the command /help is issued."""
     await message_man.random_meme(update, context)
@@ -70,6 +75,54 @@ async def random_meme_command(update: Update, context: ContextTypes.DEFAULT_TYPE
 async def answer_meme(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Method to answer a meme"""
     await message_man.answer_meme(update, context)
+
+
+async def error_handler(update: object, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Log the error and send a telegram message to notify the developer."""
+
+    # Log the error before we do anything else, so we can see it even if something breaks.
+
+    logger.error("Exception while handling an update:", exc_info=context.error)
+
+    # traceback.format_exception returns the usual python message about an exception, but as a
+
+    # list of strings rather than a single string, so we have to join them together.
+
+    tb_list = traceback.format_exception(None, context.error, context.error.__traceback__)
+
+    tb_string = "".join(tb_list)
+
+    # Build the message with some markup and additional information about what happened.
+
+    # You might need to add some logic to deal with messages longer than the 4096-character limit.
+
+    update_str = update.to_dict() if isinstance(update, Update) else str(update)
+
+    message = (
+
+        "An exception was raised while handling an update\n"
+
+        f"<pre>update = {html.escape(json.dumps(update_str, indent=2, ensure_ascii=False))}"
+
+        "</pre>\n\n"
+
+        f"<pre>context.chat_data = {html.escape(str(context.chat_data))}</pre>\n\n"
+
+        f"<pre>context.user_data = {html.escape(str(context.user_data))}</pre>\n\n"
+
+        f"<pre>{html.escape(tb_string)}</pre>"
+
+    )
+
+    # Finally, send the message
+    config_data = load_config()
+    chat_id = config_data.get("telegram_api", {}).get("error_handler_message_id", "")
+
+    await context.bot.send_message(
+
+        chat_id=chat_id, text=message, parse_mode=ParseMode.HTML
+
+    )
 
 
 def main() -> None:
@@ -89,9 +142,10 @@ def main() -> None:
     application.add_handler(CommandHandler("random", random_meme_command))
     application.add_handler(InlineQueryHandler(inline_query.inline_query))
 
-    # on non command i.e message - echo the message on Telegram
+    # on non command i.e. message - echo the message on Telegram
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, answer_meme))
 
+    application.add_error_handler(error_handler)
     # Run the bot until the user presses Ctrl-C
     application.run_polling(allowed_updates=Update.ALL_TYPES)
 
