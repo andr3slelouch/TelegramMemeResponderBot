@@ -19,10 +19,11 @@ class MemeManager:
     def load_dataframe(self) -> None:
         if self.meme_database_df is None:
             config_data = load_config()
-            meme_database_path = os.path.join(get_working_directory(),config_data.get("meme_managing", {}).get("meme_database", ""))
+            meme_database_path = os.path.join(get_working_directory(),
+                                              config_data.get("meme_managing", {}).get("meme_database", ""))
             self.meme_database_df = pd.read_excel(meme_database_path)
 
-    def random_stickers(self,n: int) -> [str]:
+    def random_stickers(self, n: int) -> [str]:
         """Returns a random list of stickers
 
         Args:
@@ -32,6 +33,7 @@ class MemeManager:
             [str]: The list of the required stickers
         """
         ids = self.get_sticker_list()
+        random.seed()
         random.shuffle(ids)
         """
         for meme in ids:
@@ -44,7 +46,7 @@ class MemeManager:
         ids = [sub_sticker.strip() for meme in ids if "|" in meme for sub_sticker in meme.split("|")]
         return list(OrderedDict.fromkeys(ids[:n]))
 
-    def search_stickers(self,query: str) -> [str]:
+    def search_stickers(self, query: str) -> [str]:
         """This function finds a meme andreturns his repective stickers
 
         Args:
@@ -141,7 +143,6 @@ class MemeManager:
         :return: List[str] | Any: Returns the id(s) of the sticker to be sent
 
         """
-        # TODO REFACTORIZE FOR TO ONELINE FOR
 
         self.load_dataframe()
 
