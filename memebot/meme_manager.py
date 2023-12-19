@@ -5,7 +5,7 @@ from datetime import datetime
 from typing import Any
 import logging
 import pandas as pd
-from systemd.journal import JournaldLogHandler
+from cysystemd.journal import JournaldLogHandler
 
 from config.config import load_config, get_working_directory
 from utils.utils import prepare_words, into_words, word_in_words
