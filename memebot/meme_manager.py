@@ -33,17 +33,9 @@ class MemeManager:
             [str]: The list of the required stickers
         """
         ids = self.get_sticker_list("video")
+        ids = [sub_sticker.strip() for meme in ids if "|" in meme for sub_sticker in meme.split("|")]
         random.seed()
         random.shuffle(ids)
-        """
-        for meme in ids:
-            if "|" in meme:
-                ids.remove(meme)
-                for sub_sticker in meme.split("|"):
-                    ids.append(sub_sticker.strip())
-        
-        """
-        ids = [sub_sticker.strip() for meme in ids if "|" in meme for sub_sticker in meme.split("|")]
         return list(OrderedDict.fromkeys(ids[:n]))
 
     def search_stickers(self, query: str) -> [str]:
