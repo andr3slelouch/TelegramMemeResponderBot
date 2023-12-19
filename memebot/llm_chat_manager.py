@@ -21,7 +21,7 @@ logger.addHandler(journald_handler)
 # optionally set the logging level
 logger.setLevel(logging.DEBUG)
 
-
+from deep_translator import GoogleTranslator
 class LlmChatManager:
     def __init__(self):
         config_data = load_config()
@@ -34,9 +34,13 @@ class LlmChatManager:
         config_data = load_config()
         prompt = config_data.get("llm_managing", {}).get("prompt", "")
 
+        translated = GoogleTranslator(source='auto', target='en').translate(message)
+
         if prompt and "{MESSAGE}" in prompt:
-            prompt = prompt.replace("{MESSAGE}", message)
+            prompt = prompt.replace("{MESSAGE}", translated)
             logger.info(f"Prompt: {prompt}")
             logger.info(f"max_tokens: {self.max_tokens}, stop: {self.stop}")
             output = self.llm(prompt, max_tokens=self.max_tokens, stop=self.stop)
-            return output.get("choices", [{}])[0].get("text", "")
+            text_to_return = output.get("choices", [{}])[0].get("text", "")
+            return GoogleTranslator(source='auto', target='es').translate(text_to_return)
+
