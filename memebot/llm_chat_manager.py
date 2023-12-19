@@ -42,5 +42,9 @@ class LlmChatManager:
             logger.info(f"max_tokens: {self.max_tokens}, stop: {self.stop}")
             output = self.llm(prompt, max_tokens=self.max_tokens, stop=self.stop)
             text_to_return = output.get("choices", [{}])[0].get("text", "")
-            return GoogleTranslator(source='auto', target='es').translate(text_to_return)
+            translated = GoogleTranslator(source='auto', target='es').translate(text_to_return)
+            if translated:
+                return translated
+            else:
+                return text_to_return
 
