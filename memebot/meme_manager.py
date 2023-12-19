@@ -32,7 +32,7 @@ class MemeManager:
         Returns:
             [str]: The list of the required stickers
         """
-        ids = self.get_sticker_list()
+        ids = self.get_sticker_list("video")
         random.seed()
         random.shuffle(ids)
         """
@@ -86,14 +86,21 @@ class MemeManager:
         except Exception:
             return {}
 
-    def get_sticker_list(self) -> [str]:
+    def get_sticker_list(self, avoid_word: str = "") -> [str]:
         """Makes a list from all thestickers in excel
+
+        Args:
+            avoid_word: Specifies a word to be filtered in dataframe
 
         Returns:
             [str]: List of stickers
         """
         try:
-            return self.meme_database_df["StickerID"].tolist()
+            if avoid_word:
+                filtered_dataframe = self.meme_database_df[~self.meme_database_df['StickerID'].str.contains(avoid_word)]
+                return filtered_dataframe.tolist()
+            else:
+                return self.meme_database_df["StickerID"].tolist()
         except pd.errors.EmptyDataError:
             return []
 
