@@ -5,14 +5,27 @@ from datetime import datetime
 from typing import Any
 import logging
 import pandas as pd
+from systemd.journal import JournaldLogHandler
 
 from config.config import load_config, get_working_directory
 from utils.utils import prepare_words, into_words, word_in_words
-config_data = load_config()
-log_file = config_data.get("app_managing", {}).get("log_file", "")
 
-logging.basicConfig(filename=log_file, level=logging.INFO)
-logging.info("Starting notifier service at " + str(datetime.utcnow()))
+# get an instance of the logger object this module will use
+logger = logging.getLogger(__name__)
+
+# instantiate the JournaldLogHandler to hook into systemd
+journald_handler = JournaldLogHandler()
+
+# set a formatter to include the level name
+journald_handler.setFormatter(logging.Formatter(
+    '[%(levelname)s] %(message)s'
+))
+
+# add the journald handler to the current logger
+logger.addHandler(journald_handler)
+
+# optionally set the logging level
+logger.setLevel(logging.DEBUG)
 
 class MemeManager:
     meme_database_df = None
@@ -41,15 +54,15 @@ class MemeManager:
 
         random.seed()
         random.shuffle(ids)
-        logging.info(f"Randomized {ids}")
+        logger.info(f"Randomized {ids}")
         ids = [sub_sticker.strip() for meme in ids if "|" in meme for sub_sticker in meme.split("|")]
         random.seed()
         random.shuffle(ids)
-        logging.info(f"Re-Randomized {ids}")
+        logger.info(f"Re-Randomized {ids}")
         # Use random.choice to get a single random sticker
         random.seed()
         selected_sticker = random.choice(ids)
-        logging.info(f"Choiced {selected_sticker}")
+        logger.info(f"Choiced {selected_sticker}")
         return [selected_sticker]
 
     def search_stickers(self, query: str) -> [str]:
