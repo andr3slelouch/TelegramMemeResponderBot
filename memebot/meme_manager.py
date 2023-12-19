@@ -54,13 +54,11 @@ class MemeManager:
 
         random.seed()
         random.shuffle(ids)
-        #logger.info(f"Randomized {ids}")
-        ids = [sub_sticker.strip() for meme in ids if "|" in meme for sub_sticker in meme.split("|")]
-        random.seed()
-        random.shuffle(ids)
-        #logger.info(f"Re-Randomized {ids}")
-        # Use random.choice to get a single random sticker
-        random.seed()
+        for meme in ids:
+            if "|" in meme:
+                ids.remove(meme)
+                for sub_sticker in meme.split("|"):
+                    ids.append(sub_sticker.strip())
         selected_sticker = random.choice(ids)
         #logger.info(f"Choiced {selected_sticker}")
         return [selected_sticker]
