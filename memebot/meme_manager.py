@@ -35,6 +35,7 @@ class MemeManager:
         ids = self.get_sticker_list("video")
         ids = [sub_sticker.strip() for meme in ids if "|" in meme for sub_sticker in meme.split("|")]
         # Use random.choice to get a single random sticker
+        random.seed()
         selected_sticker = random.choice(ids)
 
         return [selected_sticker]
