@@ -54,15 +54,15 @@ class MemeManager:
 
         random.seed()
         random.shuffle(ids)
-        logger.info(f"Randomized {ids}")
+        #logger.info(f"Randomized {ids}")
         ids = [sub_sticker.strip() for meme in ids if "|" in meme for sub_sticker in meme.split("|")]
         random.seed()
         random.shuffle(ids)
-        logger.info(f"Re-Randomized {ids}")
+        #logger.info(f"Re-Randomized {ids}")
         # Use random.choice to get a single random sticker
         random.seed()
         selected_sticker = random.choice(ids)
-        logger.info(f"Choiced {selected_sticker}")
+        #logger.info(f"Choiced {selected_sticker}")
         return [selected_sticker]
 
     def search_stickers(self, query: str) -> [str]:
@@ -117,7 +117,8 @@ class MemeManager:
         try:
             if avoid_word:
                 filtered_dataframe = self.meme_database_df[~self.meme_database_df['StickerID'].str.contains(avoid_word)]
-                return filtered_dataframe["StickerID"].tolist()
+                filtered_dataframe_shuffled = filtered_dataframe.sample(frac=1)
+                return filtered_dataframe_shuffled["StickerID"].tolist()
             else:
                 return self.meme_database_df["StickerID"].tolist()
         except pd.errors.EmptyDataError:
