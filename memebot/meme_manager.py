@@ -34,9 +34,10 @@ class MemeManager:
         """
         ids = self.get_sticker_list("video")
         ids = [sub_sticker.strip() for meme in ids if "|" in meme for sub_sticker in meme.split("|")]
-        random.seed()
-        random.shuffle(ids)
-        return list(OrderedDict.fromkeys(ids[:n]))
+        # Use random.choice to get a single random sticker
+        selected_sticker = random.choice(ids)
+
+        return [selected_sticker]
 
     def search_stickers(self, query: str) -> [str]:
         """This function finds a meme andreturns his repective stickers
