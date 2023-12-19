@@ -98,7 +98,7 @@ class MemeManager:
         try:
             if avoid_word:
                 filtered_dataframe = self.meme_database_df[~self.meme_database_df['StickerID'].str.contains(avoid_word)]
-                return filtered_dataframe.tolist()
+                return filtered_dataframe["StickerID"].tolist()
             else:
                 return self.meme_database_df["StickerID"].tolist()
         except pd.errors.EmptyDataError:
