@@ -1,13 +1,18 @@
 import random
 import os
 from collections import OrderedDict
+from datetime import datetime
 from typing import Any
-
+import logging
 import pandas as pd
 
 from config.config import load_config, get_working_directory
 from utils.utils import prepare_words, into_words, word_in_words
+config_data = load_config()
+log_file = config_data.get("app_managing", {}).get("log_file", "")
 
+logging.basicConfig(filename=log_file, level=logging.INFO)
+logging.info("Starting notifier service at " + str(datetime.utcnow()))
 
 class MemeManager:
     meme_database_df = None
@@ -33,15 +38,18 @@ class MemeManager:
             [str]: The list of the required stickers
         """
         ids = self.get_sticker_list("video")
+
         random.seed()
         random.shuffle(ids)
+        logging.info(f"Randomized {ids}")
         ids = [sub_sticker.strip() for meme in ids if "|" in meme for sub_sticker in meme.split("|")]
         random.seed()
         random.shuffle(ids)
+        logging.info(f"Re-Randomized {ids}")
         # Use random.choice to get a single random sticker
         random.seed()
         selected_sticker = random.choice(ids)
-
+        logging.info(f"Choiced {selected_sticker}")
         return [selected_sticker]
 
     def search_stickers(self, query: str) -> [str]:

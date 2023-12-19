@@ -8,6 +8,7 @@ ExecStart=/home/andres/Downloads/GitClones/TelegramMemeResponderBot/venv/bin/pyt
 Type=simple
 User=andres
 Group=andres
+Environment=PYTHONUNBUFFERED=1
 
 [Install]
 WantedBy=multi-user.target

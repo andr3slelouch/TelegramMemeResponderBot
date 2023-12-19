@@ -1,7 +1,8 @@
 meme_managing:
   meme_database: "../data/meme_bot_db.xlsx"
   meme_video_path: "../data/video/"
-
+app_managing:
+  log_file: "../data/memebot.log"
 telegram_api:
   api_key: "API_KEY"
   error_handler_message_id: 000000000
