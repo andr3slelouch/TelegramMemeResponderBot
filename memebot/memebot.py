@@ -74,11 +74,12 @@ async def random_meme_command(update: Update, context: ContextTypes.DEFAULT_TYPE
 
 async def prompt_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Send a message when the command /help is issued."""
-    await message_man.prompt_reply(update, context)
+    await message_man.llm_reply(update, context, set_prompt=True)
+
 
 async def answer_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Send a message when the command /help is issued."""
-    await message_man.prompt_reply(update, context)
+    await message_man.llm_reply(update, context, set_prompt=False)
 
 
 async def answer_meme(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -150,7 +151,7 @@ def main() -> None:
     application.add_handler(CommandHandler("list", list_memes_command))
     application.add_handler(CommandHandler("random", random_meme_command))
     application.add_handler(CommandHandler("prompt", prompt_command))
-    application.add_handler(CommandHandler("answer", prompt_command))
+    application.add_handler(CommandHandler("answer", answer_command))
     application.add_handler(InlineQueryHandler(inline_query.inline_query))
 
     # on non command i.e. message - echo the message on Telegram

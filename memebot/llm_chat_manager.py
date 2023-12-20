@@ -39,9 +39,10 @@ class LlmChatManager:
         translated = GoogleTranslator(source='auto', target='en').translate(message)
         stop = []
         if prompt:
-            if "{MESSAGE}" in prompt and not set_prompt:
+            if "{MESSAGE}" in prompt:
                 prompt = prompt.replace("{MESSAGE}", translated)
                 logger.info(f"Prompt: {prompt}")
+            if not set_prompt:
                 stop = self.stop
             elif set_prompt:
                 prompt = message

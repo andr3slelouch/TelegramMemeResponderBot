@@ -12,6 +12,7 @@ logger = logging.getLogger(__name__)
 
 PROMPT_STR = "/prompt"
 
+
 class MessageManager:
     def __init__(self):
         self.meme = MemeManager()
@@ -45,8 +46,16 @@ class MessageManager:
                     data=(update.effective_chat.id, sent_msg.message_id),
                 )
 
-    async def _answer_to_insult(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
-        normalized_text = string_normalizer(update.message.text)
+    async def _answer_to_insult(self, update: Update, context: ContextTypes.DEFAULT_TYPE,
+                                set_prompt: bool = False,  answer_from_replied_message: bool = False) -> None:
+        if answer_from_replied_message and update.message.reply_to_message:
+            normalized_text = string_normalizer(update.message.reply_to_message.text)
+            chat_id = update.message.reply_to_message.chat_id
+            message_id = update.message.reply_to_message.message_id
+        else:
+            normalized_text = string_normalizer(update.message.text)
+            chat_id = update.message.chat_id
+            message_id = update.message.message_id
 
         """
         insults = [
@@ -56,23 +65,20 @@ class MessageManager:
         if normalized_text in insults:
             await self.random_meme(update, context)
         """
-        if "bot" in normalized_text or PROMPT_STR in normalized_text:
+        if "bot" in normalized_text or set_prompt:
             llcm = LlmChatManager()
-            if PROMPT_STR in normalized_text:
-                set_prompt = True
-            else:
-                set_prompt = False
             message_to_reply = llcm.answer(normalized_text.replace(PROMPT_STR, ""), set_prompt)
-            await update.message.reply_text(message_to_reply)
+            await context.bot.send_message(text=message_to_reply,chat_id=chat_id, reply_to_message_id=message_id)
 
-    async def prompt_reply(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    async def llm_reply(self, update: Update, context: ContextTypes.DEFAULT_TYPE, set_prompt: bool = True, answer_from_replied_message: bool = False) -> None:
         """
         This method selects a random meme to send
         :param update: Update of the current session
         :param context: Context of the current session
+        :param set_prompt: Set if the prompt will be set
         :return: None
         """
-        await self._answer_to_insult(update, context)
+        await self._answer_to_insult(update, context, set_prompt=set_prompt, answer_from_replied_message = answer_from_replied_message)
 
     async def random_meme(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         """
