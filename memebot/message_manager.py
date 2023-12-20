@@ -55,9 +55,9 @@ class MessageManager:
         if normalized_text in insults:
             await self.random_meme(update, context)
         """
-        if "bot" in normalized_text:
+        if "bot" in normalized_text or "/prompt" in normalized_text:
             llcm = LlmChatManager()
-            message_to_reply = llcm.answer(normalized_text)
+            message_to_reply = llcm.answer(normalized_text.replace("/prompt", ""))
             await update.message.reply_text(message_to_reply)
 
     async def prompt_reply(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -93,7 +93,7 @@ class MessageManager:
                 await context.bot.send_video(
                     chat_id=update.effective_chat.id,
                     video=open(get_video_location(sticker_id_str.split(":")[1]), "rb"),
-                    reply_to_message_id= update.message.message_id
+                    reply_to_message_id=update.message.message_id
                 )
             else:
                 await context.bot.send_sticker(
@@ -130,7 +130,7 @@ class MessageManager:
         video_path = get_video_location(video_parameters.get("video", ""))
         if video_parameters.get("time", None) is not None:
             seconds_to_add = int(video_parameters.get("time", 0))
-            if video_parameters.get("accuracy","") != "s":
+            if video_parameters.get("accuracy", "") != "s":
                 seconds_to_add *= 60
             logger.info(f"Seconds to add {seconds_to_add}")
             context.job_queue.run_once(
