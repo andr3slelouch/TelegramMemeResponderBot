@@ -60,6 +60,14 @@ class MessageManager:
             message_to_reply = llcm.answer(normalized_text)
             await update.message.reply_text(message_to_reply)
 
+    async def prompt_reply(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+        """
+        This method selects a random meme to send
+        :param update: Update of the current session
+        :param context: Context of the current session
+        :return: None
+        """
+        await self._answer_to_insult(update, context)
 
     async def random_meme(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         """

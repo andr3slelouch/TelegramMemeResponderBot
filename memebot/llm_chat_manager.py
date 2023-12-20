@@ -32,18 +32,25 @@ class LlmChatManager:
         self.max_tokens = config_data.get("llm_managing", {}).get("max_tokens", 1024)
         self.stop = config_data.get("llm_managing", {}).get("stop", [])
 
-    def answer(self, message: str):
+    def answer(self, message: str, set_prompt: bool = False):
         config_data = load_config()
         prompt = config_data.get("llm_managing", {}).get("prompt", "")
 
         translated = GoogleTranslator(source='auto', target='en').translate(message)
 
-        if prompt and "{MESSAGE}" in prompt:
-            prompt = prompt.replace("{MESSAGE}", translated)
-            logger.info(f"Prompt: {prompt}")
+        if prompt:
+            if "{MESSAGE}" in prompt and not set_prompt:
+                prompt = prompt.replace("{MESSAGE}", translated)
+                logger.info(f"Prompt: {prompt}")
+
             logger.info(f"max_tokens: {self.max_tokens}, stop: {self.stop}")
             output = self.llm(prompt, max_tokens=self.max_tokens, stop=self.stop)
-            text_to_return = output.get("choices", [{}])[0].get("text", "").replace("Memebot:", "").strip()
+            text_to_return = (output.get("choices", [{}])[0].
+                              get("text", "").
+                              replace("Memebot:", "").
+                              replace("MemeBot:", "").
+                              strip()
+                              )
             translated = GoogleTranslator(source='auto', target='es').translate(text_to_return)
             if translated:
                 return translated
