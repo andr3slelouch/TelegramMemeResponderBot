@@ -74,7 +74,7 @@ async def random_meme_command(update: Update, context: ContextTypes.DEFAULT_TYPE
 
 async def prompt_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Send a message when the command /help is issued."""
-    await message_man.random_meme(update, context)
+    await message_man.prompt_reply(update, context)
 
 
 async def answer_meme(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
