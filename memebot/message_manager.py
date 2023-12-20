@@ -57,18 +57,18 @@ class MessageManager:
             chat_id = update.message.chat_id
             message_id = update.message.message_id
 
-        """
-        insults = [
-            "pinche bot", "bot culiao", "bot cdlbv",
-            "bot conchatumadre", "bot crvrg"
-        ]
-        if normalized_text in insults:
-            await self.random_meme(update, context)
-        """
+        logger.info("chat_id:" + str(chat_id))
+        logger.info("message_id:" + str(message_id))
+        logger.info("normalized_text:" + str(normalized_text))
+
         if "bot" in normalized_text or set_prompt:
             llcm = LlmChatManager()
             message_to_reply = llcm.answer(normalized_text.replace(PROMPT_STR, ""), set_prompt)
-            await context.bot.send_message(text=message_to_reply,chat_id=chat_id, reply_to_message_id=message_id)
+            logger.info("message_to_reply: " + str(message_to_reply))
+            if message_to_reply:
+                await context.bot.send_message(text=message_to_reply,chat_id=chat_id, reply_to_message_id=message_id)
+            else:
+                await self.random_meme(update,context)
 
     async def llm_reply(self, update: Update, context: ContextTypes.DEFAULT_TYPE, set_prompt: bool = True, answer_from_replied_message: bool = False) -> None:
         """
