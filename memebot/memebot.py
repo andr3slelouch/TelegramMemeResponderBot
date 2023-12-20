@@ -79,7 +79,7 @@ async def prompt_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
 
 async def answer_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Send a message when the command /help is issued."""
-    await message_man.llm_reply(update, context, set_prompt=False)
+    await message_man.llm_reply(update, context, set_prompt=False, answer_from_replied_message=True)
 
 
 async def answer_meme(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
