@@ -37,18 +37,23 @@ class LlmChatManager:
         prompt = config_data.get("llm_managing", {}).get("prompt", "")
 
         translated = GoogleTranslator(source='auto', target='en').translate(message)
-
+        stop = []
         if prompt:
             if "{MESSAGE}" in prompt and not set_prompt:
                 prompt = prompt.replace("{MESSAGE}", translated)
                 logger.info(f"Prompt: {prompt}")
-
-            logger.info(f"max_tokens: {self.max_tokens}, stop: {self.stop}")
-            output = self.llm(prompt, max_tokens=self.max_tokens, stop=self.stop)
+                stop = self.stop
+            elif set_prompt:
+                prompt = message
+                stop = []
+            logger.info(f"max_tokens: {self.max_tokens}, stop: {stop}")
+            output = self.llm(prompt, max_tokens=self.max_tokens, stop=stop)
             text_to_return = (output.get("choices", [{}])[0].
                               get("text", "").
                               replace("Memebot:", "").
                               replace("MemeBot:", "").
+                              replace("MemesBot:", "").
+                              replace("Memesbot:", "").
                               strip()
                               )
             translated = GoogleTranslator(source='auto', target='es').translate(text_to_return)

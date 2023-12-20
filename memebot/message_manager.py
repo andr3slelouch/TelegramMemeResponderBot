@@ -10,6 +10,7 @@ from memebot.llm_chat_manager import LlmChatManager
 
 logger = logging.getLogger(__name__)
 
+PROMPT_STR = "/prompt"
 
 class MessageManager:
     def __init__(self):
@@ -55,9 +56,13 @@ class MessageManager:
         if normalized_text in insults:
             await self.random_meme(update, context)
         """
-        if "bot" in normalized_text or "/prompt" in normalized_text:
+        if "bot" in normalized_text or PROMPT_STR in normalized_text:
             llcm = LlmChatManager()
-            message_to_reply = llcm.answer(normalized_text.replace("/prompt", ""))
+            if PROMPT_STR in normalized_text:
+                set_prompt = True
+            else:
+                set_prompt = False
+            message_to_reply = llcm.answer(normalized_text.replace(PROMPT_STR, ""), set_prompt)
             await update.message.reply_text(message_to_reply)
 
     async def prompt_reply(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
