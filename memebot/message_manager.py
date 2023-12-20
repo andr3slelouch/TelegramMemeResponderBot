@@ -61,7 +61,7 @@ class MessageManager:
         logger.info("message_id:" + str(message_id))
         logger.info("normalized_text:" + str(normalized_text))
 
-        if "bot" in normalized_text or set_prompt:
+        if "bot" in normalized_text or set_prompt or answer_from_replied_message:
             llcm = LlmChatManager()
             message_to_reply = llcm.answer(normalized_text.replace(PROMPT_STR, ""), set_prompt)
             logger.info("message_to_reply: " + str(message_to_reply))
